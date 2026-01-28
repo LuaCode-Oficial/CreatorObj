@@ -1,1 +1,215 @@
-ok
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete a Missão</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
+
+        :root {
+            --bg-grad: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 99%, #FECFEF 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --locked: #7f8c8d;
+            --unlocked: #00b894;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-image: var(--bg-grad);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        h2 { color: #2d3436; margin-bottom: 5px; }
+        p { color: #636e72; margin-bottom: 25px; }
+
+        .mission-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 12px 0;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            background: linear-gradient(to right, #6c5ce7, #a29bfe);
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mission-btn:hover { transform: scale(1.02); }
+        
+        /* Estado quando clicado/esperando */
+        .mission-btn.waiting {
+            background: #b2bec3;
+            cursor: not-allowed;
+            color: #636e72;
+            transform: none;
+        }
+
+        /* Estado quando completado */
+        .mission-btn.done {
+            background: #00b894;
+            cursor: default;
+        }
+        .mission-btn.done::after { content: ' ✓'; }
+
+        /* Botão Final Bloqueado */
+        #final-btn-container {
+            margin-top: 30px;
+            border-top: 2px dashed #dfe6e9;
+            padding-top: 20px;
+        }
+
+        .final-btn {
+            width: 100%;
+            padding: 18px;
+            border-radius: 12px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            transition: 0.5s;
+            background: var(--locked);
+            color: #ddd;
+            cursor: not-allowed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* Botão Final Desbloqueado */
+        .final-btn.unlocked {
+            background: linear-gradient(45deg, #fd79a8, #e84393);
+            color: white;
+            cursor: pointer;
+            animation: pulse 1.5s infinite;
+            box-shadow: 0 0 20px rgba(232, 67, 147, 0.6);
+        }
+
+        @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Missão Necessária 🔒</h2>
+        <p>Complete as etapas abaixo para liberar o link.</p>
+
+        <div id="missions-list">
+            </div>
+
+        <div id="final-btn-container">
+            <button id="final-btn" class="final-btn" disabled>
+                🔒 Bloqueado
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Função para ler os parâmetros da URL
+        function getParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const data = urlParams.get('d');
+            if (!data) return null;
+            try {
+                return JSON.parse(atob(data)); // Decodifica Base64
+            } catch (e) {
+                return null;
+            }
+        }
+
+        const data = getParams();
+        const missionList = document.getElementById('missions-list');
+        const finalBtn = document.getElementById('final-btn');
+        let completedCount = 0;
+        let totalMissions = 0;
+
+        if (!data) {
+            missionList.innerHTML = "<p style='color:red'>Erro: Link inválido ou quebrado.</p>";
+        } else {
+            totalMissions = data.ls.length;
+            
+            // Gerar botões de missão
+            data.ls.forEach((link, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'mission-btn';
+                btn.innerText = `Acessar Link ${index + 1}`;
+                
+                btn.onclick = () => startMission(btn, link);
+                missionList.appendChild(btn);
+            });
+        }
+
+        function startMission(btn, link) {
+            // Se já estiver esperando ou concluído, não faz nada
+            if (btn.classList.contains('waiting') || btn.classList.contains('done')) return;
+
+            // Abre o link
+            window.open(link, '_blank');
+
+            // Muda estado visual para "Esperando"
+            btn.classList.add('waiting');
+            let timeLeft = 20;
+            btn.innerText = `Aguarde ${timeLeft}s...`;
+
+            // Inicia contador
+            const timer = setInterval(() => {
+                timeLeft--;
+                btn.innerText = `Aguarde ${timeLeft}s...`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    finishMission(btn);
+                }
+            }, 1000);
+        }
+
+        function finishMission(btn) {
+            btn.classList.remove('waiting');
+            btn.classList.add('done');
+            btn.innerText = "Concluído";
+            completedCount++;
+            checkAllDone();
+        }
+
+        function checkAllDone() {
+            if (completedCount >= totalMissions) {
+                unlockFinalButton();
+            }
+        }
+
+        function unlockFinalButton() {
+            finalBtn.disabled = false;
+            finalBtn.classList.add('unlocked');
+            finalBtn.innerHTML = `🔓 ${data.ft}`; // Texto definido pelo criador
+            
+            finalBtn.onclick = () => {
+                window.location.href = data.fu; // Link final definido pelo criador
+            };
+        }
+    </script>
+</body>
+</html>
