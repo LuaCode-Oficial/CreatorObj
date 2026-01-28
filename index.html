@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Builder Pro - Online</title>
+    <title>Web Builder Pro - Link Real</title>
     <style>
         :root { --primary: #00ff88; --bg: #121212; --panel: #1e1e1e; --text: #e0e0e0; }
         body { font-family: 'Fira Code', monospace; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; }
@@ -14,7 +14,7 @@
         input, textarea { width: 100%; background: #000; border: 1px solid #444; color: var(--primary); padding: 12px; border-radius: 8px; box-sizing: border-box; }
         textarea { height: 120px; font-size: 12px; }
         
-        .file-block { background: #2a2a2a; padding: 15px; border-radius: 10px; border-left: 4px solid var(--primary); margin-bottom: 15px; }
+        .file-block { background: #2a2a2a; padding: 15px; border-radius: 10px; border-left: 4px solid var(--primary); margin-bottom: 15px; position: relative; }
         
         button { cursor: pointer; padding: 12px; border-radius: 8px; border: none; font-weight: bold; text-transform: uppercase; transition: 0.3s; }
         .btn-add { background: #333; color: white; border: 1px dashed #666; }
@@ -23,11 +23,12 @@
         #link-display { 
             background: #222; border: 1px solid var(--primary); color: var(--primary);
             padding: 15px; border-radius: 8px; margin-top: 20px; display: none;
-            word-break: break-all; cursor: pointer; text-align: center;
+            word-break: break-all; cursor: pointer; text-align: center; font-size: 0.9em;
         }
 
         iframe { width: 100%; height: 100%; border: none; background: white; border-radius: 10px; margin-top: 10px; }
-        .loading { color: var(--primary); font-style: italic; display: none; }
+        .loading { color: var(--primary); font-style: italic; display: none; margin-top: 10px; }
+        .remove-btn { color: #ff5555; background: none; font-size: 10px; position: absolute; top: 10px; right: 10px; }
     </style>
 </head>
 <body>
@@ -40,34 +41,51 @@
 
         <div id="files-container"></div>
 
-        <button class="btn-add" onclick="addNewFile()">[+] Adicionar Script/Arquivo</button>
+        <button class="btn-add" onclick="addNewFile()">[+] Adicionar Novo Script</button>
         
-        <button class="btn-build" id="buildBtn" onclick="publishSite()">🌐 PUBLICAR SITE REAL</button>
-        <div id="loadingMsg" class="loading">Enviando para o servidor...</div>
+        <button class="btn-build" id="buildBtn" onclick="publishSite()">🌐 GERAR LINK PÚBLICO</button>
+        <div id="loadingMsg" class="loading">Subindo arquivos para o banco de dados...</div>
         
         <div id="link-display" onclick="copyLink()"></div>
     </div>
 
     <div class="preview-area">
-        <label>Preview em Tempo Real:</label>
+        <label>Visualização do Projeto:</label>
         <iframe id="live-preview"></iframe>
     </div>
 
     <script>
+        // Sistema de Banco de Dados Local (Salvamento Automático)
+        function saveLocal() {
+            const files = [];
+            document.querySelectorAll('.file-block').forEach(block => {
+                files.push({
+                    name: block.querySelector('.file-name').value,
+                    content: block.querySelector('.file-content').value
+                });
+            });
+            localStorage.setItem('web_builder_data', JSON.stringify(files));
+        }
+
         function addNewFile(name = '', content = '') {
             const container = document.getElementById('files-container');
             const div = document.createElement('div');
             div.className = 'file-block';
             div.innerHTML = `
-                <input type="text" class="file-name" value="${name}" placeholder="nome.html">
-                <textarea class="file-content" style="margin-top:10px" placeholder="Seu código aqui...">${content}</textarea>
-                <button onclick="this.parentElement.remove()" style="background:none; color:red; font-size:10px; padding:0; margin-top:5px">Remover arquivo</button>
+                <button class="remove-btn" onclick="this.parentElement.remove(); saveLocal()">[X]</button>
+                <input type="text" class="file-name" oninput="saveLocal()" value="${name}" placeholder="ex: index.html">
+                <textarea class="file-content" oninput="saveLocal()" style="margin-top:10px" placeholder="Digite seu código aqui...">${content}</textarea>
             `;
             container.appendChild(div);
         }
 
-        // Adiciona o primeiro arquivo automaticamente
-        addNewFile('index.html', '<h1>Site Online!</h1>\n<p>Este link funciona em qualquer lugar.</p>');
+        // Carregar dados salvos ao abrir o site
+        const saved = JSON.parse(localStorage.getItem('web_builder_data'));
+        if (saved && saved.length > 0) {
+            saved.forEach(f => addNewFile(f.name, f.content));
+        } else {
+            addNewFile('index.html', '<h1>Meu Site Online!</h1>\n<p>Este link funciona de verdade.</p>');
+        }
 
         async function publishSite() {
             const btn = document.getElementById('buildBtn');
@@ -75,51 +93,58 @@
             const linkDisplay = document.getElementById('link-display');
             
             btn.disabled = true;
+            btn.innerText = "CONSTRUINDO...";
             loading.style.display = 'block';
 
-            // 1. Coleta o código
             let fullCode = "";
             document.querySelectorAll('.file-block').forEach(block => {
-                const name = block.querySelector('.file-name').value;
+                const name = block.querySelector('.file-name').value.toLowerCase();
                 const content = block.querySelector('.file-content').value;
-                if(name.includes('.html')) fullCode += content;
-                else if(name.includes('.css')) fullCode += `<style>${content}</style>`;
-                else if(name.includes('.js')) fullCode += `<script>${content}<\/script>`;
+                
+                if(name.endsWith('.html')) fullCode += content;
+                else if(name.endsWith('.css')) fullCode += `<style>${content}</style>`;
+                else if(name.endsWith('.js')) fullCode += `<script>${content}<\/script>`;
+                else fullCode += `\n\n${content}`;
             });
 
             try {
-                // 2. API de Banco de Dados de Texto (Hastebin/Pastebin)
-                // Usamos um serviço de "CORS Proxy" para permitir o envio direto do navegador
-                const response = await fetch('https://hastebin.com/documents', {
+                // Usando a API Paste.ee (Alternativa robusta e grátis)
+                const response = await fetch('https://api.paste.ee/v1/pastes', {
                     method: 'POST',
-                    body: fullCode
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        key: "public", // Chave pública permitida
+                        sections: [{ name: "Site", contents: fullCode }]
+                    })
                 });
                 
                 const data = await response.json();
                 
-                // 3. Gera o link final
-                // O link do Hastebin funciona como um banco de dados de código bruto
-                const finalUrl = `https://hastebin.com/raw/${data.key}`;
-                
-                linkDisplay.style.display = 'block';
-                linkDisplay.innerText = "COPIAR LINK: " + finalUrl;
-                document.getElementById('live-preview').srcdoc = fullCode;
+                if (data.success) {
+                    // O link 'link' da paste.ee redireciona para a visualização bruta (raw)
+                    const rawUrl = data.link.replace('paste.ee/p/', 'paste.ee/r/');
+                    
+                    linkDisplay.style.display = 'block';
+                    linkDisplay.innerHTML = `<strong>LINK GERADO (Clique para copiar):</strong><br>${rawUrl}`;
+                    document.getElementById('live-preview').srcdoc = fullCode;
+                } else {
+                    throw new Error();
+                }
                 
             } catch (error) {
-                alert("Erro ao conectar com o banco de dados. Tente novamente.");
-                console.error(error);
+                alert("Erro no servidor de banco de dados. Tente novamente em instantes.");
             } finally {
                 btn.disabled = false;
+                btn.innerText = "🌐 GERAR LINK PÚBLICO";
                 loading.style.display = 'none';
             }
         }
 
         function copyLink() {
-            const text = document.getElementById('link-display').innerText.replace("COPIAR LINK: ", "");
+            const text = document.getElementById('link-display').innerText.split(":").pop().trim();
             navigator.clipboard.writeText(text);
-            alert("Link Global copiado! Você pode abrir em qualquer dispositivo.");
+            alert("Link copiado com sucesso! Pode testar no seu navegador.");
         }
     </script>
 </body>
-    </html>
-    
+</html>
