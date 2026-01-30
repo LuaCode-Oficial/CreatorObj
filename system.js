@@ -1,84 +1,97 @@
 // CONFIGURAÇÃO DO BANCO DE DADOS
 const SUPABASE_URL = 'https://xiwbehvuppprfemgkooi.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_cwgR_d3Ncek3D0AqtdE9ow_QUyOMgRQ'; // Substitua pela sua chave pública
+const SUPABASE_KEY = 'sb_publishable_cwgR_d3Ncek3D0AqtdE9ow_QUyOMgRQ'; // Eu sei que você já tem a sua, mantenha-a!
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = JSON.parse(localStorage.getItem('user')) || null;
 
-// Inicialização
-window.onload = () => {
+// Inicialização Garantida
+document.addEventListener('DOMContentLoaded', () => {
     if (!currentUser) {
-        document.getElementById('authScreen').classList.remove('hidden');
+        showAuthVisuals();
     } else {
         updateUI();
         loadGames();
     }
-};
+});
 
-// --- Funções de Interface ---
-function togglePanel(show) {
-    const panel = document.getElementById('sidePanel');
-    panel.style.display = show ? 'block' : 'none';
+// --- Sistema de Visibilidade de Telas ---
+function showAuthVisuals() {
+    document.getElementById('authScreen').classList.remove('hidden');
+    // Garante que comece no modo Cadastro se não houver conta
+    document.getElementById('registerForm').classList.remove('hidden');
 }
 
-function updateUI() {
-    if (!currentUser) return;
-    const info = `
-        <img src="${currentUser.avatar || 'https://via.placeholder.com/50'}" class="user-img">
-        <div>
-            <strong>${currentUser.name}</strong>
-        </div>
-    `;
-    document.getElementById('panelUserInfo').innerHTML = info;
-    document.getElementById('topUser').innerHTML = info;
-}
-
-// --- Lógica de Cadastro/Login ---
-document.getElementById('photoPreview').onclick = () => document.getElementById('fileInput').click();
-
-document.getElementById('fileInput').onchange = (e) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-        document.getElementById('imgAvatar').src = reader.result;
-        document.getElementById('imgAvatar').classList.remove('hidden');
-        document.getElementById('imgPlaceholder').classList.add('hidden');
-    };
-    reader.readAsDataURL(e.target.files[0]);
-};
-
+// --- Cadastro com Verificação de Duplicados ---
 async function handleRegister() {
-    const name = document.getElementById('regName').value;
-    const email = document.getElementById('regEmail').value;
+    const name = document.getElementById('regName').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
     const pass = document.getElementById('regPass').value;
     const avatar = document.getElementById('imgAvatar').src;
 
-    if (name.length > 20 || /[\u1F600-\u1F64F]/.test(pass)) {
-        alert("Verifique o nome (máx 20) ou senha (sem emojis)");
-        return;
-    }
+    if (!name || !email || !pass) return alert("Preencha tudo!");
+    if (name.length > 20) return alert("Nome muito longo!");
+    if (/[\u1F600-\u1F64F]/.test(pass)) return alert("Emojis não são permitidos na senha!");
 
-    // No Supabase, você faria um insert na tabela 'profiles'
+    // Tenta inserir no Supabase
     const { data, error } = await _supabase
         .from('profiles')
-        .insert([{ name, email, password: pass, avatar }])
+        .insert([{ 
+            name: name, 
+            email: email, 
+            password: pass, 
+            avatar: avatar 
+        }])
         .select();
 
     if (error) {
-        alert("Nome ou Email já existem! Tente sugestões como: " + name + Math.floor(Math.random()*99));
+        // Se der erro de duplicata (error.code 23505), gera sugestão
+        const suggestion = name + Math.floor(Math.random() * 999);
+        alert(`Este nome ou email já existe! Sugestão: ${suggestion}`);
+        console.error("Erro Supabase:", error.message);
     } else {
         currentUser = data[0];
-        localStorage.setItem('user', JSON.stringify(currentUser));
-        document.getElementById('authScreen').classList.add('hidden');
-        updateUI();
+        saveAndEnter();
     }
 }
 
-// --- Sistema de Jogos ---
+// --- Sistema de Login (O que estava faltando) ---
+async function handleLogin() {
+    const identifier = document.getElementById('loginUser').value; // Nome ou Email
+    const pass = document.getElementById('loginPass').value;
+
+    const { data, error } = await _supabase
+        .from('profiles')
+        .select('*')
+        .or(`name.eq.${identifier},email.eq.${identifier}`)
+        .eq('password', pass)
+        .single();
+
+    if (data) {
+        alert(`Bem-vindo de volta ${data.name}!`);
+        currentUser = data;
+        saveAndEnter();
+    } else {
+        alert("Usuário ou senha incorretos!");
+    }
+}
+
+function saveAndEnter() {
+    localStorage.setItem('user', JSON.stringify(currentUser));
+    document.getElementById('authScreen').classList.add('hidden');
+    updateUI();
+    loadGames();
+    location.reload(); // Recarrega para limpar estados antigos
+}
+
+// --- Carregar Jogos e Feed ---
 async function loadGames() {
     const { data: games, error } = await _supabase
         .from('games')
         .select('*')
         .order('likes', { ascending: false });
+
+    if (error) return console.error("Erro ao carregar jogos:", error);
 
     const feed = document.getElementById('gameFeed');
     feed.innerHTML = '';
@@ -90,7 +103,7 @@ async function loadGames() {
             <img src="${game.cover || 'https://via.placeholder.com/150'}">
             <div class="game-info">
                 <strong>${game.title}</strong>
-                <p>👍 ${game.likes} | 🎮 ${game.playing}K</p>
+                <p>🎮 ${game.playing >= 1000 ? (game.playing/1000).toFixed(1) + 'K' : game.playing}</p>
             </div>
         `;
         card.onclick = () => openGameDetail(game);
@@ -98,33 +111,20 @@ async function loadGames() {
     });
 }
 
-let activeGame = null;
-function openGameDetail(game) {
-    activeGame = game;
-    document.getElementById('modalGameTitle').innerText = game.title;
-    document.getElementById('modalGameDesc').innerText = game.description;
-    document.getElementById('modalGameImg').src = game.cover;
-    document.getElementById('gameModal').classList.remove('hidden');
+// --- Funções de Interface Base ---
+function togglePanel(show) {
+    const panel = document.getElementById('sidePanel');
+    panel.style.display = show ? 'block' : 'none';
 }
 
-function closeGameModal() {
-    document.getElementById('gameModal').classList.add('hidden');
-}
-
-function playGame() {
-    if (!activeGame) return;
-    const frame = document.getElementById('gameFrame');
-    frame.srcdoc = activeGame.html_script;
-    document.getElementById('gamePlayer').style.display = 'block';
-    // Atualizar contador de jogadores no banco aqui...
-}
-
-function stopGame() {
-    document.getElementById('gameFrame').srcdoc = '';
-    document.getElementById('gamePlayer').style.display = 'none';
-}
-
-function logout() {
-    localStorage.clear();
-    location.reload();
+function updateUI() {
+    if (!currentUser) return;
+    const userInfoHTML = `
+        <img src="${currentUser.avatar || 'https://via.placeholder.com/50'}" class="user-img" style="border-radius:50%">
+        <div>
+            <strong>${currentUser.name}</strong>
+            <p style="font-size:10px; color:gray;">Online</p>
+        </div>
+    `;
+    document.getElementById('panelUserInfo').innerHTML = userInfoHTML;
 }
