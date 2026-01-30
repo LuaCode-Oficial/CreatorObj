@@ -1,6 +1,6 @@
 // CONFIGURAÇÃO DO BANCO DE DADOS
 const SUPABASE_URL = 'https://xiwbehvuppprfemgkooi.supabase.co';
-const SUPABASE_KEY = 'SUA_ANON_KEY_AQUI'; // Substitua pela sua chave pública
+const SUPABASE_KEY = 'sb_publishable_cwgR_d3Ncek3D0AqtdE9ow_QUyOMgRQ'; // Substitua pela sua chave pública
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = JSON.parse(localStorage.getItem('user')) || null;
