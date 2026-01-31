@@ -819,3 +819,58 @@
     updateCursor();
 </script>
 
+// AI Part
+<div id="translator-container" style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: #fff; padding: 10px; border: 1px solid #ccc;">
+    <select id="language-selector">
+        <option value="en">Inglês</option>
+        <option value="es">Espanhol</option>
+        <option value="fr">Francês</option>
+        <option value="de">Alemão</option>
+        <option value="it">Italiano</option>
+        <option value="pt">Português</option>
+    </select>
+    <button onclick="translateSite()">Traduzir Site</button>
+</div>
+
+<script>
+// COLOQUE SUA API KEY DO GROQ AQUI
+const GROQ_API_KEY = "SUA_CHAVE_AQUI";
+
+async function translateSite() {
+    const targetLanguage = document.getElementById('language-selector').value;
+    
+    // Captura todo o texto visível do corpo do site
+    const bodyContent = document.body.innerText;
+
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${GROQ_API_KEY}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            model: "mixtral-8x7b-32768", // Ou outro modelo disponível no Groq
+            messages: [
+                { "role": "system", "content": "Você é um tradutor. Traduza o texto a seguir para o idioma solicitado. Retorne APENAS o texto traduzido." },
+                { "role": "user", "content": `Traduza para ${targetLanguage}: ${bodyContent}` }
+            ],
+            temperature: 0.2
+        })
+    });
+
+    const data = await response.json();
+    const translatedText = data.choices[0].message.content;
+
+    // Aqui você decide se quer substituir o texto ou alertar
+    // CUIDADO: Substituir o innerText pode quebrar scripts do site.
+    console.log("Conteúdo Traduzido:", translatedText);
+    alert("Tradução processada! Verifique o console para os detalhes.");
+}
+
+// Detecção Automática de Localização (Simples)
+window.onload = () => {
+    const userLang = navigator.language || navigator.userLanguage; 
+    console.log("O usuário fala: " + userLang);
+    // Você pode usar isso para pré-selecionar o idioma no <select>
+};
+</script>
