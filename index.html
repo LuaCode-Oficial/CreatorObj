@@ -757,3 +757,47 @@
     </script>
 </body>
 </html>
+
+<div id="youtube-audio-player" style="display: none;"></div>
+
+<script>
+  // 1. Carrega a API do YouTube de forma assíncrona
+  var tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/iframe_api";
+  var firstScriptTag = document.getElementsByTagName('script')[0];
+  firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+  var player;
+  function onYouTubeIframeAPIReady() {
+    player = new YT.Player('youtube-audio-player', {
+      height: '0',
+      width: '0',
+      videoId: 'DMgjmY97dubTlj6sA', // ID extraído do seu link
+      playerVars: {
+        'autoplay': 1,       // Tenta iniciar automaticamente
+        'loop': 1,           // Indica que deve haver loop
+        'playlist': 'DMgjmY97dubTlj6sA', // Necessário para o loop funcionar no YouTube
+        'controls': 0,       // Esconde os controles
+        'showinfo': 0,
+        'modestbranding': 1
+      },
+      events: {
+        'onReady': onPlayerReady,
+        'onStateChange': onPlayerStateChange
+      }
+    });
+  }
+
+  function onPlayerReady(event) {
+    // Alguns navegadores bloqueiam autoplay com som. 
+    // O comando abaixo tenta iniciar, mas pode exigir um clique do usuário no site.
+    event.target.playVideo();
+  }
+
+  function onPlayerStateChange(event) {
+    // Garante que, se o vídeo parar por qualquer motivo, ele recomece
+    if (event.data === YT.PlayerState.ENDED) {
+      player.playVideo();
+    }
+  }
+</script>
