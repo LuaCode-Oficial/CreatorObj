@@ -1,29 +1,65 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Bola Clicker Tycoon 2.0</title>
     <style>
-        /* Adicione/Substitua isso no seu CSS para o botão de X aparecer corretamente */
-        .close-btn {
+        /* --- ESTILOS GERAIS (CSS) --- */
+        :root {
+            --bg-color: #1a1a2e;
+            --panel-color: #16213e;
+            --accent-color: #0f3460;
+            --text-color: #e94560;
+            --white: #ffffff;
+            --green: #2ecc71;
+            --gold: #f1c40f;
+            --locked: rgba(0, 0, 0, 0.7);
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--white);
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* --- BOTÃO DE REBIRTH (Canto Superior Esquerdo) --- */
+        #rebirth-btn-container {
             position: absolute;
-            top: 15px;
-            right: 20px;
-            font-size: 30px;
+            top: 20px;
+            left: 20px;
+            z-index: 50;
+        }
+
+        #rebirth-trigger {
+            background: linear-gradient(45deg, #e67e22, #d35400);
+            border: 2px solid #fff;
+            color: white;
+            padding: 10px 20px;
             font-weight: bold;
+            border-radius: 10px;
             cursor: pointer;
-            color: #e94560; /* Cor de destaque */
-            transition: transform 0.2s, color 0.2s;
-            line-height: 1;
-            z-index: 210;
+            box-shadow: 0 0 10px rgba(230, 126, 34, 0.5);
+            transition: transform 0.2s;
         }
 
-        .close-btn:hover {
-            color: #ffffff;
-            transform: scale(1.2);
+        #rebirth-trigger:hover {
+            transform: scale(1.1);
         }
 
-        /* Garante que o modal use Flex para centralizar quando visível */
+        /* --- MODAL DE REBIRTH --- */
         #rebirth-modal {
-            display: none; 
+            display: none; /* Escondido por padrão */
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
@@ -31,33 +67,693 @@
             z-index: 200;
             justify-content: center;
             align-items: center;
+            flex-direction: column;
         }
+
+        .modal-content {
+            background: var(--panel-color);
+            padding: 40px;
+            border-radius: 20px;
+            border: 4px solid var(--text-color);
+            text-align: center;
+            width: 500px;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .progress-container {
+            width: 100%;
+            background-color: #333;
+            border-radius: 15px;
+            height: 30px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #e94560, #ff7675);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            line-height: 30px;
+            top: 0;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        #do-rebirth-btn {
+            display: none;
+            background: var(--green);
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            animation: pulse 1s infinite;
+        }
+
+        /* --- ÁREA DO JOGO (ESQUERDA) --- */
+        #game-area {
+            width: 65%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: radial-gradient(circle at center, #252a40 0%, #1a1a2e 100%);
+        }
+
+        #rebirth-stats {
+            font-size: 1.2rem;
+            color: var(--gold);
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(241, 196, 15, 0.5);
+        }
+
+        #score-container {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px var(--text-color);
+            z-index: 10;
+        }
+
+        #sps-display {
+            font-size: 1.2rem;
+            color: #aaa;
+            margin-bottom: 40px;
+        }
+
+        /* A BOLA */
+        #the-ball {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #ff7675, #d63031);
+            box-shadow: 
+                inset -20px -20px 60px rgba(0,0,0,0.5),
+                0 0 30px rgba(231, 76, 60, 0.6);
+            cursor: pointer;
+            transition: transform 0.05s ease;
+            position: relative;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #the-ball::after {
+            content: '★';
+            font-size: 80px;
+            color: rgba(255,255,255,0.3);
+        }
+
+        #the-ball:active {
+            transform: scale(0.95);
+        }
+
+        /* BOLA DOURADA DO EVENTO */
+        .mini-gold-ball {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle at 30% 30%, #ffd700, #b8860b);
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 90;
+            box-shadow: 0 0 15px var(--gold);
+            animation: popIn 0.3s ease-out;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        /* Animação de clique (números flutuantes) */
+        .floating-text {
+            position: absolute;
+            font-weight: bold;
+            font-size: 1.8rem; /* Maior para ver melhor */
+            color: var(--white);
+            pointer-events: none;
+            z-index: 999;
+            text-shadow: 0 0 5px black;
+            animation: floatRandom 1.5s ease-out forwards;
+        }
+
+        @keyframes floatRandom {
+            0% { opacity: 1; transform: scale(0.5); }
+            50% { transform: scale(1.2); }
+            100% { opacity: 0; transform: translateY(-50px) scale(1); }
+        }
+
+        /* --- PAINEL DE COMPRAS (DIREITA) --- */
+        #shop-area {
+            width: 35%;
+            height: 100%;
+            background-color: var(--panel-color);
+            border-left: 4px solid var(--accent-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #shop-header {
+            padding: 20px;
+            background-color: var(--accent-color);
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        #shop-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        #shop-list::-webkit-scrollbar { width: 10px; }
+        #shop-list::-webkit-scrollbar-track { background: #0f1526; }
+        #shop-list::-webkit-scrollbar-thumb { background: var(--text-color); border-radius: 5px; }
+
+        .shop-item {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .shop-item:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateX(-5px);
+        }
+
+        .shop-icon { font-size: 2rem; margin-right: 15px; width: 50px; text-align: center; }
+        .shop-info { flex: 1; }
+        .shop-name { font-weight: bold; font-size: 1.1rem; display: block; }
+        .shop-cost { color: var(--green); font-weight: bold; font-size: 0.9rem; }
+        .shop-desc { font-size: 0.8rem; color: #bbb; display: block; }
+
+        .shop-item.locked {
+            background-color: rgba(0, 0, 0, 0.5);
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(100%);
+        }
+        
+        .shop-item.unlocked {
+            background: linear-gradient(90deg, rgba(233,69,96,0.1) 0%, rgba(0,0,0,0) 100%);
+            border-color: var(--text-color);
+        }
+
+        /* --- EVENTOS ALEATÓRIOS --- */
+        #event-banner {
+            position: absolute;
+            top: 20px;
+            background: gold;
+            color: black;
+            padding: 10px 30px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: none;
+            animation: pulse 1s infinite;
+            z-index: 100;
+            box-shadow: 0 0 20px gold;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
     </style>
 </head>
 <body>
 
+    <div id="rebirth-btn-container">
+        <button id="rebirth-trigger" onclick="openRebirthModal()">⚡ RENASCIMENTO</button>
+    </div>
+
+    <div id="rebirth-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeRebirthModal()">×</span>
+            <h2>SALA DE RENASCIMENTO</h2>
+            <p>Sacrifique tudo para evoluir.</p>
+            
+            <div class="progress-container">
+                <div class="progress-bar" id="rebirth-progress-bar"></div>
+                <div class="progress-text" id="rebirth-progress-text">0 / 0</div>
+            </div>
+
+            <p style="font-size: 0.9rem; color: #aaa;">
+                Ao resetar você perde seus itens e dinheiro, mas ganha<br>
+                <strong style="color: var(--gold); font-size: 1.2rem;">4x MULTIPLICADOR PERMANENTE</strong>
+            </p>
+
+            <button id="do-rebirth-btn" onclick="executeRebirth()">RENASCER AGORA!</button>
+        </div>
+    </div>
+
+    <div id="game-area">
+        <div id="event-banner">EVENTO ATIVO!</div>
+        
+        <div id="rebirth-stats">Renascimentos: <span id="rebirth-count">0</span> (x<span id="rebirth-mult">1</span>)</div>
+
+        <div id="score-container">
+            $<span id="score">0</span>
+        </div>
+        <div id="sps-display">por segundo: <span id="sps">0</span></div>
+
+        <div id="the-ball"></div>
+    </div>
+
+    <div id="shop-area">
+        <div id="shop-header">Mercado Negro da Bola</div>
+        <div id="shop-list">
+            </div>
+    </div>
+
     <script>
-        // 1. Função para abrir o painel (Visibilidade)
-        function openRebirthModal() {
-            const modal = document.getElementById('rebirth-modal');
-            modal.style.display = 'flex';
-            // Chama a função de atualizar a barra se ela existir no seu script principal
-            if (typeof updateRebirthUI === "function") updateRebirthUI();
-        }
+        /* --- LÓGICA DO JOGO (JAVASCRIPT) --- */
 
-        // 2. Função para fechar o painel (Invisibilidade)
-        function closeRebirthModal() {
-            const modal = document.getElementById('rebirth-modal');
-            modal.style.display = 'none';
-        }
+        // Variáveis de Estado
+        let gameData = {
+            score: 0,
+            clickValue: 1,
+            autoClick: 0,
+            multiplier: 1, // Multiplicador de itens
+            rebirths: 0,
+            rebirthMultiplier: 1 // Multiplicador GLOBAL de renascimento
+        };
 
-        // 3. Fechar ao clicar fora da caixa central (Opcional, melhora a experiência)
-        window.onclick = function(event) {
-            const modal = document.getElementById('rebirth-modal');
-            if (event.target == modal) {
-                closeRebirthModal();
+        // Configuração de Rebirth
+        let rebirthCostBase = 1000000; // 1 milhão para o primeiro
+        let currentRebirthCost = rebirthCostBase;
+
+        // Configuração de Eventos
+        let eventActive = false;
+        let eventMultiplier = 1;
+        let goldenBallInterval = null;
+
+        // Elementos DOM
+        const scoreEl = document.getElementById('score');
+        const spsEl = document.getElementById('sps');
+        const ball = document.getElementById('the-ball');
+        const shopList = document.getElementById('shop-list');
+        const eventBanner = document.getElementById('event-banner');
+        
+        // Elementos DOM Rebirth
+        const rebirthModal = document.getElementById('rebirth-modal');
+        const progressBar = document.getElementById('rebirth-progress-bar');
+        const progressText = document.getElementById('rebirth-progress-text');
+        const doRebirthBtn = document.getElementById('do-rebirth-btn');
+        const rebirthCountEl = document.getElementById('rebirth-count');
+        const rebirthMultEl = document.getElementById('rebirth-mult');
+
+        // --- SISTEMA DE SOM (AudioContext) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            if (type === 'click') {
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'buy') {
+                oscillator.type = 'square';
+                oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
+                oscillator.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'gold') {
+                // Som de sino
+                oscillator.type = 'triangle';
+                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.5);
+            } else if (type === 'rebirth') {
+                // Som grave épico
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(100, audioCtx.currentTime);
+                oscillator.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 2);
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 2);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 2);
             }
         }
+
+        // --- GERADOR DE ITENS DA LOJA (BALANCEADO) ---
+        let upgrades = [
+            { name: "Dedo Extra", baseCost: 15, bonus: 1, type: "auto", icon: "👆" },
+            { name: "Mouse Gamer", baseCost: 100, bonus: 5, type: "auto", icon: "🖱️" },
+            { name: "Jogador Amador", baseCost: 500, bonus: 20, type: "click", icon: "⚽" },
+            { name: "Treinador", baseCost: 1500, bonus: 50, type: "auto", icon: "📣" },
+            { name: "Máquina de Chutes", baseCost: 5000, bonus: 150, type: "auto", icon: "⚙️" },
+            { name: "Estádio Local", baseCost: 20000, bonus: 500, type: "auto", icon: "🏟️" },
+            { name: "Patrocínio de TV", baseCost: 100000, bonus: 1500, type: "click", icon: "📺" },
+            { name: "Clonagem de Bolas", baseCost: 500000, bonus: 5000, type: "auto", icon: "🧬" },
+            { name: "Robô Jogador", baseCost: 2000000, bonus: 15000, type: "auto", icon: "🤖" },
+            { name: "Fábrica de Bolas", baseCost: 10000000, bonus: 50000, type: "auto", icon: "🏭" },
+            { name: "Satélite Esportivo", baseCost: 50000000, bonus: 200000, type: "click", icon: "🛰️" },
+            { name: "Base na Lua", baseCost: 200000000, bonus: 1000000, type: "auto", icon: "🌑" },
+            { name: "Portal Dimensional", baseCost: 1000000000, bonus: 5000000, type: "auto", icon: "🌀" },
+            { name: "Manipulador do Tempo", baseCost: 50000000000, bonus: 20000000, type: "auto", icon: "⏳" },
+            { name: "Império Galáctico", baseCost: 1000000000000, bonus: 100000000, type: "click", icon: "🌌" }
+        ];
+
+        // Gerar itens absurdos
+        const sufixos = ["Alpha", "Beta", "Gamma", "Omega", "Infinito", "Divino", "Cosmico", "Eterno"];
+        let lastCost = 50000000000000;
+        let lastBonus = 500000000;
+
+        for (let i = 15; i < 50; i++) {
+            lastCost *= 4.5;
+            lastBonus *= 3.5;
+            const sufixo = sufixos[i % sufixos.length];
+            const nivel = Math.floor(i / sufixos.length) + 1;
+            
+            upgrades.push({
+                name: `Singularidade ${sufixo} V${nivel}`,
+                baseCost: Math.ceil(lastCost),
+                bonus: Math.ceil(lastBonus),
+                type: (i % 3 === 0) ? "click" : "auto", 
+                icon: (i % 2 === 0) ? "⚛️" : "✨",
+            });
+        }
+
+        function resetUpgrades() {
+            upgrades.forEach(u => {
+                u.count = 0;
+                u.currentCost = u.baseCost;
+            });
+        }
+        resetUpgrades(); // Inicializa
+
+        // --- FUNÇÕES UTILITÁRIAS ---
+        function formatNumber(num) {
+            if (num >= 1e18) return (num / 1e18).toFixed(2) + " Qt";
+            if (num >= 1e15) return (num / 1e15).toFixed(2) + " Qd";
+            if (num >= 1e12) return (num / 1e12).toFixed(2) + " T";
+            if (num >= 1e9) return (num / 1e9).toFixed(2) + " B";
+            if (num >= 1e6) return (num / 1e6).toFixed(2) + " M";
+            return Math.floor(num).toLocaleString('pt-BR');
+        }
+
+        // --- RENDERIZAÇÃO DA LOJA ---
+        function initShop() {
+            shopList.innerHTML = "";
+            upgrades.forEach((item, index) => {
+                const btn = document.createElement('div');
+                btn.className = 'shop-item locked';
+                btn.id = `item-${index}`;
+                btn.onclick = () => buyUpgrade(index);
+
+                btn.innerHTML = `
+                    <div class="shop-icon">${item.icon}</div>
+                    <div class="shop-info">
+                        <span class="shop-name">${item.name}</span>
+                        <span class="shop-desc">+${formatNumber(item.bonus)} ${item.type === 'click' ? 'click' : '/seg'}</span>
+                        <span class="shop-cost">$ ${formatNumber(item.currentCost)}</span>
+                    </div>
+                    <div style="font-size:1.5rem; font-weight:bold; color: #555;">x<span id="count-${index}">0</span></div>
+                `;
+                shopList.appendChild(btn);
+            });
+        }
+
+        function updateShopUI() {
+            upgrades.forEach((item, index) => {
+                const btn = document.getElementById(`item-${index}`);
+                const countSpan = document.getElementById(`count-${index}`);
+                const costSpan = btn.querySelector('.shop-cost');
+                
+                costSpan.innerText = "$ " + formatNumber(item.currentCost);
+                countSpan.innerText = item.count;
+
+                if (gameData.score >= item.currentCost) {
+                    btn.classList.remove('locked');
+                    btn.classList.add('unlocked');
+                } else {
+                    btn.classList.add('locked');
+                    btn.classList.remove('unlocked');
+                }
+            });
+        }
+
+        // --- LÓGICA DE REBIRTH ---
+        function openRebirthModal() {
+            rebirthModal.style.display = 'flex';
+            updateRebirthUI();
+        }
+
+        function closeRebirthModal() {
+            rebirthModal.style.display = 'none';
+        }
+
+        function updateRebirthUI() {
+            const percent = Math.min(100, (gameData.score / currentRebirthCost) * 100);
+            progressBar.style.width = percent + "%";
+            progressText.innerText = `${formatNumber(gameData.score)} / ${formatNumber(currentRebirthCost)}`;
+
+            if (gameData.score >= currentRebirthCost) {
+                doRebirthBtn.style.display = 'inline-block';
+                progressText.innerText = "PRONTO PARA RENASCER!";
+            } else {
+                doRebirthBtn.style.display = 'none';
+            }
+        }
+
+        function executeRebirth() {
+            playSound('rebirth');
+            
+            // Reseta progresso atual
+            gameData.score = 0;
+            gameData.clickValue = 1;
+            gameData.autoClick = 0;
+            gameData.multiplier = 1;
+            
+            // Incrementa Rebirth
+            gameData.rebirths++;
+            gameData.rebirthMultiplier *= 4; // Bônus de 4x
+            
+            // Aumenta dificuldade do próximo rebirth
+            currentRebirthCost *= 10; 
+
+            // Reseta a loja
+            resetUpgrades();
+            initShop();
+            
+            // Fecha modal e atualiza
+            closeRebirthModal();
+            updateScoreDisplay();
+            spawnFloatingText("RENASCIMENTO! 4x BÔNUS!", window.innerWidth/2, window.innerHeight/2);
+        }
+
+        // --- MECÂNICA DO JOGO ---
+        function updateScoreDisplay() {
+            scoreEl.innerText = formatNumber(gameData.score);
+            
+            // Total = Auto * Evento * Rebirth
+            let totalAuto = gameData.autoClick * eventMultiplier * gameData.rebirthMultiplier;
+            spsEl.innerText = formatNumber(totalAuto);
+
+            rebirthCountEl.innerText = gameData.rebirths;
+            rebirthMultEl.innerText = formatNumber(gameData.rebirthMultiplier);
+        }
+
+        // Modificado para aparecer em qualquer lugar
+        function spawnFloatingText(text, x, y, randomPosition = false) {
+            const el = document.createElement('div');
+            el.className = 'floating-text';
+            el.innerText = text;
+            
+            // Se for aleatório (ex: autoclick ou pedido do usuário), ignora X/Y e gera novos
+            if (randomPosition) {
+                const randomX = Math.random() * (window.innerWidth - 100);
+                const randomY = Math.random() * (window.innerHeight - 50);
+                el.style.left = randomX + 'px';
+                el.style.top = randomY + 'px';
+            } else {
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+            }
+            
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1500);
+        }
+
+        function clickBall(e) {
+            playSound('click');
+            
+            let val = gameData.clickValue * gameData.multiplier * eventMultiplier * gameData.rebirthMultiplier;
+            gameData.score += val;
+            
+            // Texto flutuante aleatório conforme pedido ("em todo lugar da tela")
+            // Usamos Math.random para espalhar os cliques pela tela inteira
+            const randomX = Math.random() * (window.innerWidth - 50);
+            const randomY = Math.random() * (window.innerHeight - 50);
+            
+            spawnFloatingText("+" + formatNumber(val), randomX, randomY, false);
+            
+            updateScoreDisplay();
+            updateShopUI();
+            if(rebirthModal.style.display === 'flex') updateRebirthUI();
+        }
+
+        function buyUpgrade(index) {
+            const item = upgrades[index];
+            if (gameData.score >= item.currentCost) {
+                playSound('buy');
+                gameData.score -= item.currentCost;
+                
+                if (item.type === 'click') {
+                    gameData.clickValue += item.bonus;
+                } else {
+                    gameData.autoClick += item.bonus;
+                }
+
+                item.count++;
+                item.currentCost = Math.ceil(item.currentCost * 1.5);
+                
+                updateScoreDisplay();
+                updateShopUI();
+                if(rebirthModal.style.display === 'flex') updateRebirthUI();
+            }
+        }
+
+        // --- EVENTO: CHUVA DE BOLAS DOURADAS ---
+        function spawnGoldenBall() {
+            const gb = document.createElement('div');
+            gb.className = 'mini-gold-ball';
+            
+            // Posição aleatória na área de jogo (evitando o painel da direita)
+            const maxX = (window.innerWidth * 0.65) - 60;
+            const maxY = window.innerHeight - 60;
+            
+            gb.style.left = Math.random() * maxX + 'px';
+            gb.style.top = Math.random() * maxY + 'px';
+            
+            gb.onclick = function() {
+                playSound('gold');
+                // Ganha 1000 * Multiplicador atual
+                const reward = 1000 * gameData.rebirthMultiplier * eventMultiplier;
+                gameData.score += reward;
+                spawnFloatingText("+" + formatNumber(reward), parseInt(gb.style.left), parseInt(gb.style.top));
+                gb.remove();
+                updateScoreDisplay();
+            };
+            
+            document.getElementById('game-area').appendChild(gb);
+            
+            // Desaparece se não clicar em 2 segundos
+            setTimeout(() => {
+                if(gb.parentElement) gb.remove();
+            }, 2000);
+        }
+
+        function triggerEvent(type) {
+            eventActive = true;
+            eventBanner.style.display = 'block';
+
+            if (type === 'rain') {
+                eventBanner.innerText = "EVENTO: CHUVA DOURADA! (Clique nas bolinhas)";
+                // Spawnar uma bola a cada 0.8s por 10 segundos
+                goldenBallInterval = setInterval(spawnGoldenBall, 800);
+                setTimeout(() => {
+                    clearInterval(goldenBallInterval);
+                    endEvent();
+                }, 10000);
+            } else if (type === 'x2') {
+                eventBanner.innerText = "EVENTO: Ganhos em Dobro (2x)!";
+                eventMultiplier = 2;
+                ball.style.filter = "hue-rotate(90deg)";
+                setTimeout(() => {
+                    eventMultiplier = 1;
+                    ball.style.filter = "none";
+                    endEvent();
+                }, 10000);
+            }
+        }
+
+        function endEvent() {
+            eventActive = false;
+            eventBanner.style.display = 'none';
+        }
+
+        // --- LOOPS DO JOGO ---
+
+        // AutoClick (10x por segundo)
+        setInterval(() => {
+            if (gameData.autoClick > 0) {
+                let gain = (gameData.autoClick * eventMultiplier * gameData.rebirthMultiplier) / 10;
+                gameData.score += gain;
+                updateScoreDisplay();
+                updateShopUI();
+                if(rebirthModal.style.display === 'flex') updateRebirthUI();
+                
+                // Texto flutuante para autoclick (opcional, pode poluir muito, deixei aleatório leve)
+                if(Math.random() > 0.9) { // Só mostra 10% das vezes para não travar
+                    spawnFloatingText("+" + formatNumber(gain*10), 0, 0, true);
+                }
+            }
+        }, 100);
+
+        // Gerenciador de Eventos Aleatórios
+        setInterval(() => {
+            if (!eventActive && Math.random() > 0.7) { // 30% de chance a cada 15s
+                // Escolhe um evento aleatório
+                const r = Math.random();
+                if (r > 0.5) triggerEvent('rain');
+                else triggerEvent('x2');
+            }
+        }, 15000);
+
+        // --- INICIALIZAÇÃO ---
+        ball.addEventListener('mousedown', clickBall);
+        initShop();
+        updateScoreDisplay();
+
     </script>
 </body>
 </html>
