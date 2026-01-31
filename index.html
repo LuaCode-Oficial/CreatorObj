@@ -758,10 +758,13 @@
 </body>
 </html>
 
+<button id="play-button" style="padding: 10px 20px; cursor: pointer;">
+  🎵 Ativar Som
+</button>
+
 <div id="youtube-audio-player" style="display: none;"></div>
 
 <script>
-  // 1. Carrega a API do YouTube de forma assíncrona
   var tag = document.createElement('script');
   tag.src = "https://www.youtube.com/iframe_api";
   var firstScriptTag = document.getElementsByTagName('script')[0];
@@ -772,32 +775,23 @@
     player = new YT.Player('youtube-audio-player', {
       height: '0',
       width: '0',
-      videoId: 'DMgjmY97dubTlj6sA', // ID extraído do seu link
+      videoId: 'DMgjmY97dubTlj6sA',
       playerVars: {
-        'autoplay': 1,       // Tenta iniciar automaticamente
-        'loop': 1,           // Indica que deve haver loop
-        'playlist': 'DMgjmY97dubTlj6sA', // Necessário para o loop funcionar no YouTube
-        'controls': 0,       // Esconde os controles
-        'showinfo': 0,
-        'modestbranding': 1
+        'autoplay': 1,
+        'loop': 1,
+        'playlist': 'DMgjmY97dubTlj6sA'
       },
       events: {
-        'onReady': onPlayerReady,
-        'onStateChange': onPlayerStateChange
+        'onReady': onPlayerReady
       }
     });
   }
 
   function onPlayerReady(event) {
-    // Alguns navegadores bloqueiam autoplay com som. 
-    // O comando abaixo tenta iniciar, mas pode exigir um clique do usuário no site.
-    event.target.playVideo();
-  }
-
-  function onPlayerStateChange(event) {
-    // Garante que, se o vídeo parar por qualquer motivo, ele recomece
-    if (event.data === YT.PlayerState.ENDED) {
+    // Quando o botão for clicado, o som começa
+    document.getElementById('play-button').addEventListener('click', function() {
       player.playVideo();
-    }
+      this.style.display = 'none'; // Esconde o botão após clicar
+    });
   }
 </script>
