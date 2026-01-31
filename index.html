@@ -757,3 +757,65 @@
     </script>
 </body>
 </html>
+
+<div id="virtual-cursor" style="
+    width: 20px; 
+    height: 20px; 
+    background: rgba(255, 255, 0, 0.5); 
+    border: 3px solid gold; 
+    border-radius: 50%; 
+    position: fixed; 
+    top: 50%; 
+    left: 50%; 
+    z-index: 9999; 
+    pointer-events: none; 
+    transition: transform 0.1s ease;
+"></div>
+
+<style>
+    /* Estilo da borda amarela para o elemento selecionado */
+    .tv-focused {
+        outline: 5px solid yellow !important;
+        outline-offset: 2px;
+    }
+</style>
+
+<script>
+    const cursor = document.getElementById('virtual-cursor');
+    let posX = window.innerWidth / 2;
+    let posY = window.innerHeight / 2;
+    const step = 20; // Quantos pixels o mouse move por clique
+    let lastElement = null;
+
+    function updateCursor() {
+        cursor.style.left = posX + 'px';
+        cursor.style.top = posY + 'px';
+
+        // Remove o destaque do elemento anterior
+        if (lastElement) lastElement.classList.remove('tv-focused');
+
+        // Detecta o que está embaixo do mouse
+        const el = document.elementFromPoint(posX, posY);
+        if (el && el !== cursor) {
+            el.classList.add('tv-focused');
+            lastElement = el;
+        }
+    }
+
+    window.addEventListener('keydown', (e) => {
+        switch(e.key) {
+            case 'ArrowUp':    posY -= step; break;
+            case 'ArrowDown':  posY += step; break;
+            case 'ArrowLeft':  posX -= step; break;
+            case 'ArrowRight': posX += step; break;
+            case 'Enter': 
+                if (lastElement) lastElement.click(); 
+                break;
+        }
+        updateCursor();
+    });
+
+    // Inicia a posição
+    updateCursor();
+</script>
+
