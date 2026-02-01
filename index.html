@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Pro Connect</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
             --bg-dark: #0b141a;
@@ -30,41 +29,41 @@
         .profile-upload { width: 150px; height: 150px; border-radius: 50%; background: #202c33; margin-bottom: 20px; cursor: pointer; overflow: hidden; border: 3px solid var(--primary); }
         #preview-img { width: 100%; height: 100%; object-fit: cover; }
         .input-group { width: 300px; display: flex; flex-direction: column; gap: 15px; }
-        input[type="text"] { background: #2a3942; border: none; padding: 15px; border-radius: 8px; color: white; outline: none; }
+        input[type="text"] { background: #2a3942; border: none; padding: 15px; border-radius: 8px; color: white; outline: none; border: 1px solid transparent; }
+        .btn-entrar { background: var(--primary); color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
 
         /* APP */
         #main-app { flex-direction: row; }
-        .sidebar { width: 350px; border-right: 1px solid rgba(255,255,255,0.1); background: var(--panel-bg); display: flex; flex-direction: column; }
-        .header { background: #202c33; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+        .sidebar { width: 350px; border-right: 1px solid rgba(255,255,255,0.1); background: var(--panel-bg); display: flex; flex-direction: column; position: relative; }
+        .header { background: #202c33; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; z-index: 5; }
         .user-thumb { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: #333; cursor: pointer; }
 
-        .contacts-list { flex: 1; overflow-y: auto; }
-        .contact-item { display: flex; align-items: center; padding: 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); transition: 0.2s; }
+        .contacts-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        .contact-item { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); order: 2; transition: background 0.2s; }
+        .contact-item.new-msg { order: 1; background: rgba(0, 168, 132, 0.1); }
         .contact-item:hover { background: #2a3942; }
-        .contact-info { margin-left: 15px; flex: 1; position: relative; }
-        .badge { background: var(--primary); color: white; border-radius: 50%; padding: 2px 7px; font-size: 10px; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); }
+        .contact-info { margin-left: 15px; flex: 1; overflow: hidden; }
+        .contact-name { font-weight: 500; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .badge { background: var(--primary); color: white; border-radius: 50%; padding: 2px 7px; font-size: 10px; float: right; margin-top: 5px; }
 
+        /* CHAT */
         .chat-area { flex: 1; display: flex; flex-direction: column; background: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-color: rgba(11,20,26,0.92); background-blend-mode: darken; }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 4px; }
         
-        /* MENSAGEM E MENU DE CONTEXTO */
-        .message { max-width: 65%; padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; position: relative; cursor: pointer; transition: background 0.2s; }
-        .message:active { background: rgba(255,255,255,0.1); }
-        .sent { align-self: flex-end; background: var(--sent-msg); }
-        .received { align-self: flex-start; background: var(--received-msg); }
-        .deleted-text { font-style: italic; color: var(--text-dim); }
+        .message { max-width: 65%; padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; position: relative; cursor: pointer; user-select: none; transition: background 0.2s; }
+        .sent { align-self: flex-end; background: var(--sent-msg); border-top-right-radius: 0; }
+        .received { align-self: flex-start; background: var(--received-msg); border-top-left-radius: 0; }
+        .msg-deleted { font-style: italic; color: var(--text-dim); }
 
-        .context-menu { position: fixed; background: #233138; border-radius: 5px; padding: 5px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 1000; min-width: 120px; display: none; }
+        /* MODAIS / CONTEXTO */
+        .context-menu { position: fixed; background: #233138; border-radius: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 100; display: none; padding: 5px 0; width: 120px; }
         .context-menu div { padding: 10px 15px; cursor: pointer; font-size: 14px; }
         .context-menu div:hover { background: #182229; }
 
-        /* MODAL DE PERFIL */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 2000; }
-        .modal-content { background: var(--panel-bg); padding: 30px; border-radius: 15px; text-align: center; width: 320px; }
-        .modal-content img { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; }
+        #profile-modal { position: absolute; inset: 0; background: var(--bg-dark); z-index: 200; display: none; flex-direction: column; align-items: center; padding: 40px 20px; }
 
-        .typing-status { color: var(--primary); font-size: 12px; height: 15px; }
-        
+        .typing-anim { color: var(--primary); font-size: 0.8rem; display: none; }
+
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
@@ -79,63 +78,63 @@
             <input type="file" id="file-input" hidden accept="image/*" onchange="previewImage(this)">
         </div>
         <div class="input-group">
-            <input type="text" id="user-name" placeholder="Digite seu nome">
-            <button onclick="cadastrarUsuario()" style="background:var(--primary); color:white; padding:12px; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">ENTRAR</button>
+            <input type="text" id="user-name" placeholder="Nome para o perfil">
+            <button class="btn-entrar" onclick="cadastrarUsuario()">COMEÇAR</button>
         </div>
     </section>
 
     <section id="main-app" class="screen">
         <div class="sidebar">
             <div class="header">
-                <img id="my-avatar" class="user-thumb">
-                <span id="my-number" style="color:var(--primary); font-weight:bold"></span>
-                <i class="fa-solid fa-plus" onclick="adicionarContato()" style="color:var(--primary); cursor:pointer;"></i>
+                <img id="my-avatar" class="user-thumb" onclick="verMeuPerfil()">
+                <span id="my-number" style="color: var(--primary); font-size: 12px;"></span>
+                <button onclick="adicionarContato()" style="background:none; border:none; color:var(--primary); font-size:24px; cursor:pointer;">+</button>
             </div>
             <div class="contacts-list" id="contacts-container"></div>
+
+            <div id="profile-modal">
+                <span onclick="this.parentElement.style.display='none'" style="align-self:flex-start; cursor:pointer; font-size:24px;">✕</span>
+                <img id="view-profile-img" style="width:200px; height:200px; border-radius:50%; object-fit:cover; margin:20px 0;">
+                <h2 id="view-profile-name"></h2>
+                <p id="view-profile-num" style="color:var(--text-dim)"></p>
+                <div style="margin-top:30px; width:100%; display:flex; flex-direction:column; gap:10px;">
+                    <button onclick="limparConversa()" class="btn-entrar" style="background:#3b4a54">Limpar Conversa</button>
+                    <button onclick="excluirContato()" class="btn-entrar" style="background:var(--danger)">Apagar Contato</button>
+                </div>
+            </div>
         </div>
 
         <div class="chat-area" id="chat-view" style="visibility: hidden;">
             <div class="header">
                 <div style="display:flex; align-items:center;">
-                    <i class="fa-solid fa-xmark" onclick="fecharChat()" style="margin-right:15px; cursor:pointer;"></i>
-                    <img id="chat-target-img" class="user-thumb" onclick="verPerfil()">
+                    <span onclick="fecharChat()" style="margin-right:15px; cursor:pointer;">✕</span>
+                    <img id="chat-target-img" class="user-thumb" onclick="verPerfilContato()">
                     <div style="margin-left:15px;">
                         <div id="chat-target-name" style="font-weight:bold;"></div>
-                        <div id="typing-anim" class="typing-status"></div>
+                        <small id="typing-status" class="typing-anim">digitando...</small>
                     </div>
                 </div>
             </div>
             
             <div class="chat-messages" id="messages-container"></div>
 
-            <div id="attachment-area" style="display:none; padding:10px; background:#1e293b; border-top:2px solid var(--primary);">
+            <div id="attachment-area" style="display:none; padding:10px; background:#1e293b; border-left:4px solid var(--primary);">
                 <small id="file-label"></small>
-                <button onclick="cancelarAnexo()" style="color:var(--danger); border:none; background:none; cursor:pointer; float:right">✕</button>
+                <button onclick="cancelarAnexo()" style="color:var(--danger); background:none; border:none; float:right;">✕</button>
             </div>
 
             <div class="input-bar" style="background:#202c33; padding:10px; display:flex; align-items:center; gap:10px;">
-                <i class="fa-solid fa-plus" onclick="document.getElementById('file-msg').click()" style="cursor:pointer; color:var(--text-dim)"></i>
+                <button onclick="document.getElementById('file-msg').click()" style="background:none; border:none; color:var(--text-dim); font-size:22px; cursor:pointer;">+</button>
                 <input type="file" id="file-msg" hidden onchange="prepararArquivo(this)">
-                <input type="text" id="msg-input" placeholder="Mensagem" style="flex:1; background:#2a3942; border:none; padding:12px; border-radius:8px; color:white;" oninput="notificarDigitando()">
-                <button onclick="enviarMensagem()" style="background:var(--primary); border:none; border-radius:50%; width:45px; height:45px; color:white;"><i class="fa-solid fa-paper-plane"></i></button>
+                <input type="text" id="msg-input" placeholder="Mensagem" style="flex:1; background:#2a3942; border:none; padding:12px; border-radius:8px; color:white;" oninput="enviarDigitando()">
+                <button onclick="enviarMensagem()" class="btn-entrar" style="padding:10px 20px;">➤</button>
             </div>
         </div>
     </section>
 
     <div id="context-menu" class="context-menu">
-        <div id="opt-copy"><i class="fa-solid fa-copy"></i> Copiar</div>
-        <div id="opt-edit"><i class="fa-solid fa-pen"></i> Editar</div>
-        <div id="opt-del"><i class="fa-solid fa-trash"></i> Apagar</div>
-    </div>
-
-    <div id="profile-modal" class="modal" onclick="this.style.display='none'">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <img id="modal-img">
-            <h3 id="modal-name"></h3>
-            <p id="modal-num" style="color:var(--text-dim); margin-bottom:20px;"></p>
-            <button onclick="limparConversa()" style="width:100%; padding:10px; margin-bottom:10px; border:none; border-radius:5px; background:rgba(255,255,255,0.1); color:white;">Limpar Conversa</button>
-            <button onclick="removerContato()" style="width:100%; padding:10px; border:none; border-radius:5px; background:var(--danger); color:white;">Apagar Contato</button>
-        </div>
+        <div id="ctx-copy" onclick="copiarTexto()">Copiar</div>
+        <div id="ctx-del" onclick="apagarMensagem()" style="color:var(--danger)">Apagar</div>
     </div>
 
     <script>
@@ -146,26 +145,17 @@
         let userSession = JSON.parse(localStorage.getItem('chat_session')) || null;
         let activeChat = null;
         let fileBase64 = null;
+        let msgSelecionadaId = null;
         let typingTimeout;
-        let selectedMsgId = null;
 
-        window.onload = () => { if (userSession) logar(userSession); };
+        window.onload = () => userSession && logar(userSession);
 
         function previewImage(input) {
-            if (input.files && input.files[0]) {
+            if (input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = e => document.getElementById('preview-img').src = e.target.result;
                 reader.readAsDataURL(input.files[0]);
             }
-        }
-
-        async function cadastrarUsuario() {
-            const name = document.getElementById('user-name').value;
-            const photo = document.getElementById('preview-img').src;
-            if (!name) return;
-            const newUser = { name, photo, number: Math.floor(100000 + Math.random() * 900000).toString(), contacts: [] };
-            localStorage.setItem('chat_session', JSON.stringify(newUser));
-            logar(newUser);
         }
 
         function logar(session) {
@@ -175,177 +165,236 @@
             document.getElementById('my-avatar').src = session.photo;
             document.getElementById('my-number').innerText = "#" + session.number;
             renderizarContatos();
-            ouvirMensagens();
+            ouvirSupabase();
         }
 
-        async function adicionarContato() {
+        async function cadastrarUsuario() {
+            const name = document.getElementById('user-name').value;
+            const photo = document.getElementById('preview-img').src;
+            if (!name) return alert("Digite um nome!");
+
+            const newUser = { 
+                name, photo, 
+                number: Math.floor(100000 + Math.random() * 899999).toString(), 
+                contacts: [] 
+            };
+            localStorage.setItem('chat_session', JSON.stringify(newUser));
+            logar(newUser);
+        }
+
+        function adicionarContato() {
             const num = prompt("Número do contato:");
-            if (!num) return;
-            // Busca no banco se existe (simulado para este script pegando infos da mensagem)
-            const novo = { name: "Usuário "+num, number: num, photo: "https://i.pravatar.cc/150?u="+num, unread: 0, lastTime: 0 };
+            const nome = prompt("Nome do contato:");
+            if (!num || !nome) return;
+            
+            const novo = { name: nome, number: num, photo: `https://ui-avatars.com/api/?name=${nome}&background=00a884&color=fff` };
             userSession.contacts.push(novo);
-            salvarLocal();
+            localStorage.setItem('chat_session', JSON.stringify(userSession));
             renderizarContatos();
         }
 
         function renderizarContatos() {
             const container = document.getElementById('contacts-container');
             container.innerHTML = "";
-            // Ordena por quem mandou mensagem por último
-            const sorted = userSession.contacts.sort((a,b) => b.lastTime - a.lastTime);
-            sorted.forEach(c => {
+            userSession.contacts.forEach(c => {
                 const div = document.createElement('div');
                 div.className = 'contact-item';
+                div.id = `cnt-${c.number}`;
                 div.onclick = () => abrirChat(c);
                 div.innerHTML = `
                     <img src="${c.photo}" class="user-thumb">
                     <div class="contact-info">
-                        <strong>${c.name}</strong><br>
+                        <span class="contact-name">${c.name}</span>
                         <small style="color:var(--text-dim)">#${c.number}</small>
-                        ${c.unread > 0 ? `<span class="badge">${c.unread}</span>` : ''}
                     </div>
+                    <div id="badge-${c.number}" class="badge" style="display:none">0</div>
                 `;
                 container.appendChild(div);
             });
         }
 
-        function abrirChat(contato) {
+        async function abrirChat(contato) {
             activeChat = contato;
-            contato.unread = 0;
-            salvarLocal();
-            renderizarContatos();
             document.getElementById('chat-view').style.visibility = 'visible';
             document.getElementById('chat-target-name').innerText = contato.name;
             document.getElementById('chat-target-img').src = contato.photo;
+            document.getElementById('badge-' + contato.number).style.display = 'none';
+            document.getElementById('badge-' + contato.number).innerText = '0';
+            document.getElementById(`cnt-${contato.number}`).classList.remove('new-msg');
             carregarHistorico();
         }
 
-        async function enviarMensagem(editId = null) {
+        function fecharChat() {
+            document.getElementById('chat-view').style.visibility = 'hidden';
+            activeChat = null;
+        }
+
+        // --- SISTEMA DE MENSAGENS ---
+        async function enviarMensagem() {
             const input = document.getElementById('msg-input');
             if (!input.value && !fileBase64) return;
 
             const payload = {
-                id: editId || Date.now(),
+                id: Date.now(),
                 de: userSession.number,
-                de_nome: userSession.name,
-                de_foto: userSession.photo,
                 para: activeChat.number,
                 texto: input.value,
                 midia: fileBase64,
-                tipo: editId ? 'EDIT' : 'MSG',
-                hora: Date.now()
+                apagada: false,
+                hora: new Date().toISOString()
             };
 
-            await supabaseClient.from('mensagens').insert([{ conteudo: `${userSession.name}|${JSON.stringify(payload)}` }]);
+            const formatado = `${userSession.name}|${JSON.stringify(payload)}`;
+            await supabaseClient.from('mensagens').insert([{ conteudo: formatado }]);
+            
             document.getElementById('snd-send').play();
+            renderMsg(payload, 'sent');
             input.value = "";
             cancelarAnexo();
-            if(!editId) carregarHistorico();
         }
 
-        function notificarDigitando() {
-            const payload = { de: userSession.number, para: activeChat.number, tipo: 'TYPING' };
-            supabaseClient.from('mensagens').insert([{ conteudo: `SYS|${JSON.stringify(payload)}` }]);
-        }
-
-        function ouvirMensagens() {
-            supabaseClient.channel('chat-pro').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensagens' }, payload => {
-                const data = JSON.parse(payload.new.conteudo.split('|')[1]);
-                
-                if (data.para === userSession.number) {
-                    if (data.tipo === 'TYPING' && activeChat && data.de === activeChat.number) {
-                        document.getElementById('typing-anim').innerText = "digitando...";
-                        clearTimeout(typingTimeout);
-                        typingTimeout = setTimeout(() => { document.getElementById('typing-anim').innerText = ""; }, 2000);
-                    } else if (data.tipo === 'MSG') {
-                        document.getElementById('snd-recv').play();
-                        atualizarContatoInfo(data);
-                        if (activeChat && data.de === activeChat.number) carregarHistorico();
-                    } else if (data.tipo === 'DELETE' || data.tipo === 'EDIT') {
-                        if (activeChat && (data.de === activeChat.number || data.para === activeChat.number)) carregarHistorico();
-                    }
-                }
-            }).subscribe();
-        }
-
-        function atualizarContatoInfo(msg) {
-            let c = userSession.contacts.find(x => x.number === msg.de);
-            if (!c) {
-                c = { name: msg.de_nome, number: msg.de, photo: msg.de_foto, unread: 0, lastTime: 0 };
-                userSession.contacts.push(c);
+        function renderMsg(data, tipo) {
+            const container = document.getElementById('messages-container');
+            const div = document.createElement('div');
+            div.className = `message ${tipo}`;
+            div.id = `msg-${data.id}`;
+            div.oncontextmenu = (e) => mostrarContexto(e, data);
+            
+            if (data.apagada) {
+                div.innerHTML = `<span class="msg-deleted">🚫 Mensagem apagada</span>`;
+            } else {
+                let html = "";
+                if (data.midia) html += `<img src="${data.midia}" style="max-width:100%; border-radius:5px; margin-bottom:5px;" onclick="window.open('${data.midia}')">`;
+                if (data.texto) html += `<span>${data.texto}</span>`;
+                div.innerHTML = html;
             }
-            c.lastTime = msg.hora;
-            if (!activeChat || activeChat.number !== msg.de) c.unread++;
-            salvarLocal();
-            renderizarContatos();
+            
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
         }
 
         async function carregarHistorico() {
             const container = document.getElementById('messages-container');
             container.innerHTML = "";
-            const { data } = await supabaseClient.from('mensagens').select('*').order('id', {ascending: true});
-            
-            data.forEach(item => {
-                const msg = JSON.parse(item.conteudo.split('|')[1]);
-                if ((msg.de === userSession.number && msg.para === activeChat.number) || (msg.de === activeChat.number && msg.para === userSession.number)) {
-                    if (msg.tipo === 'TYPING') return;
-                    
-                    const div = document.createElement('div');
-                    div.className = `message ${msg.de === userSession.number ? 'sent' : 'received'}`;
-                    div.oncontextmenu = (e) => showMenu(e, msg);
-                    
-                    if(msg.tipo === 'DELETE') {
-                        div.innerHTML = `<span class="deleted-text"><i class="fa-solid fa-ban"></i> Mensagem apagada</span>`;
-                    } else {
-                        let content = msg.midia ? `<img src="${msg.midia}" style="max-width:200px; border-radius:5px;"><br>` : "";
-                        content += `<span>${msg.texto}</span>`;
-                        div.innerHTML = content;
-                    }
-                    container.appendChild(div);
-                }
-            });
-            container.scrollTop = container.scrollHeight;
+            const { data } = await supabaseClient.from('mensagens').select('*');
+            if (data) {
+                data.forEach(item => {
+                    try {
+                        const msg = JSON.parse(item.conteudo.split('|')[1]);
+                        if ((msg.de === userSession.number && msg.para === activeChat.number) ||
+                            (msg.de === activeChat.number && msg.para === userSession.number)) {
+                            renderMsg(msg, msg.de === userSession.number ? 'sent' : 'received');
+                        }
+                    } catch (e) {}
+                });
+            }
         }
 
-        // MENU DE CONTEXTO (LONG PRESS / RIGHT CLICK)
-        function showMenu(e, msg) {
+        // --- REALTIME (OUVIR MUDANÇAS) ---
+        function ouvirSupabase() {
+            supabaseClient.channel('chat-v3').on('postgres_changes', { event: '*', schema: 'public', table: 'mensagens' }, payload => {
+                if (payload.eventType === 'INSERT') {
+                    const parts = payload.new.conteudo.split('|');
+                    const msg = JSON.parse(parts[1]);
+
+                    // Recebeu mensagem
+                    if (msg.para === userSession.number) {
+                        if (activeChat && msg.de === activeChat.number) {
+                            renderMsg(msg, 'received');
+                            document.getElementById('snd-recv').play();
+                        } else {
+                            // Alerta no contato lateral
+                            const b = document.getElementById('badge-' + msg.de);
+                            if (b) {
+                                b.style.display = 'block';
+                                b.innerText = parseInt(b.innerText) + 1;
+                                document.getElementById('cnt-' + msg.de).classList.add('new-msg');
+                            }
+                        }
+                    }
+                }
+                // Digitando (via sistema de visibilidade de strings temporárias)
+                if (payload.new.conteudo.includes('TYPING|')) {
+                    const data = payload.new.conteudo.split('|');
+                    if (data[2] === userSession.number && activeChat && data[1] === activeChat.number) {
+                        document.getElementById('typing-status').style.display = 'block';
+                        clearTimeout(typingTimeout);
+                        typingTimeout = setTimeout(() => document.getElementById('typing-status').style.display='none', 2000);
+                    }
+                }
+            }).subscribe();
+        }
+
+        async function enviarDigitando() {
+            if (!activeChat) return;
+            // Evita sobrecarregar o banco, manda apenas 1 vez a cada intervalo
+            if (!window.lastTyping || Date.now() - window.lastTyping > 2000) {
+                window.lastTyping = Date.now();
+                await supabaseClient.from('mensagens').insert([{ conteudo: `SYS|TYPING|${userSession.number}|${activeChat.number}` }]);
+            }
+        }
+
+        // --- MENU DE CONTEXTO ---
+        function mostrarContexto(e, data) {
             e.preventDefault();
-            if(msg.tipo === 'DELETE') return;
-            selectedMsgId = msg.id;
+            msgSelecionadaId = data;
             const menu = document.getElementById('context-menu');
             menu.style.display = 'block';
             menu.style.left = e.pageX + 'px';
             menu.style.top = e.pageY + 'px';
-
-            document.getElementById('opt-copy').onclick = () => { navigator.clipboard.writeText(msg.texto); hideMenu(); };
-            document.getElementById('opt-edit').style.display = msg.de === userSession.number ? 'block' : 'none';
-            document.getElementById('opt-edit').onclick = () => { document.getElementById('msg-input').value = msg.texto; document.getElementById('msg-input').focus(); hideMenu(); };
-            document.getElementById('opt-del').onclick = () => { acaoDeletar(msg); hideMenu(); };
+            
+            // Só pode apagar se for minha
+            document.getElementById('ctx-del').style.display = (data.de === userSession.number) ? 'block' : 'none';
         }
 
-        async function acaoDeletar(msg) {
-            const payload = { id: msg.id, de: userSession.number, para: activeChat.number, tipo: 'DELETE' };
-            await supabaseClient.from('mensagens').insert([{ conteudo: `SYS|${JSON.stringify(payload)}` }]);
-            carregarHistorico();
+        document.onclick = () => document.getElementById('context-menu').style.display = 'none';
+
+        async function apagarMensagem() {
+            // No Supabase, para apagar de verdade com esse script, mandamos uma mensagem de "update" 
+            // Para simplificar, vamos inserir uma flag de exclusão
+            const payload = { id: msgSelecionadaId.id, de: userSession.number, para: activeChat.number, apagada: true };
+            await supabaseClient.from('mensagens').insert([{ conteudo: `SYS|DELETE|${JSON.stringify(payload)}` }]);
+            location.reload(); // Recarrega para limpar interface
         }
 
-        window.onclick = hideMenu;
-        function hideMenu() { document.getElementById('context-menu').style.display = 'none'; }
-
-        // PERFIL E OUTROS
-        function verPerfil() {
-            document.getElementById('profile-modal').style.display = 'flex';
-            document.getElementById('modal-img').src = activeChat.photo;
-            document.getElementById('modal-name').innerText = activeChat.name;
-            document.getElementById('modal-num').innerText = "#" + activeChat.number;
+        function copiarTexto() {
+            navigator.clipboard.writeText(msgSelecionadaId.texto);
+            alert("Copiado!");
         }
 
-        function fecharChat() { document.getElementById('chat-view').style.visibility = 'hidden'; activeChat = null; }
-        function salvarLocal() { localStorage.setItem('chat_session', JSON.stringify(userSession)); }
-        function prepararArquivo(i) { const r = new FileReader(); r.onload = e => { fileBase64 = e.target.result; document.getElementById('attachment-area').style.display='block'; document.getElementById('file-label').innerText=i.files[0].name; }; r.readAsDataURL(i.files[0]); }
-        function cancelarAnexo() { fileBase64 = null; document.getElementById('attachment-area').style.display='none'; }
-        function limparConversa() { if(confirm("Limpar mensagens?")) { document.getElementById('messages-container').innerHTML = ""; document.getElementById('profile-modal').style.display='none'; } }
-        function removerContato() { userSession.contacts = userSession.contacts.filter(c => c.number !== activeChat.number); salvarLocal(); renderizarContatos(); fecharChat(); document.getElementById('profile-modal').style.display='none'; }
+        // --- INTERFACE DE PERFIL ---
+        function verPerfilContato() {
+            const m = document.getElementById('profile-modal');
+            m.style.display = 'flex';
+            document.getElementById('view-profile-img').src = activeChat.photo;
+            document.getElementById('view-profile-name').innerText = activeChat.name;
+            document.getElementById('view-profile-num').innerText = "#" + activeChat.number;
+        }
+
+        function verMeuPerfil() {
+            const m = document.getElementById('profile-modal');
+            m.style.display = 'flex';
+            document.getElementById('view-profile-img').src = userSession.photo;
+            document.getElementById('view-profile-name').innerText = userSession.name + " (Eu)";
+            document.getElementById('view-profile-num').innerText = "#" + userSession.number;
+        }
+
+        // Funções de Arquivo
+        function prepararArquivo(input) {
+            if (input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    fileBase64 = e.target.result;
+                    document.getElementById('attachment-area').style.display = 'block';
+                    document.getElementById('file-label').innerText = "📎 " + input.files[0].name;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        function cancelarAnexo() {
+            fileBase64 = null;
+            document.getElementById('attachment-area').style.display = 'none';
+        }
     </script>
 </body>
 </html>
