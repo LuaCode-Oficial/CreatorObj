@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Pro Connect</title>
+    <title>Chat Pro Connect v3</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
             --bg-dark: #0b141a;
@@ -30,36 +31,75 @@
         #preview-img { width: 100%; height: 100%; object-fit: cover; }
         .input-group { width: 300px; display: flex; flex-direction: column; gap: 15px; }
         input[type="text"] { background: #2a3942; border: none; padding: 15px; border-radius: 8px; color: white; outline: none; border: 1px solid transparent; }
-        input[type="text"]:focus { border-color: var(--primary); }
-        .btn-entrar { background: var(--primary); color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .btn-entrar:hover { opacity: 0.8; }
 
-        /* APP */
+        /* APP LAYOUT */
         #main-app { flex-direction: row; }
         .sidebar { width: 350px; border-right: 1px solid rgba(255,255,255,0.1); background: var(--panel-bg); display: flex; flex-direction: column; }
-        .header { background: #202c33; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .user-thumb { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: #333; }
+        .header { background: #202c33; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; min-height: 60px; }
+        .user-thumb { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: #333; cursor: pointer; }
 
+        /* LISTA DE CONTATOS */
         .contacts-list { flex: 1; overflow-y: auto; }
-        .contact-item { display: flex; align-items: center; padding: 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); position: relative; }
+        .contact-item { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); transition: 0.2s; position: relative; }
         .contact-item:hover { background: #2a3942; }
-        .contact-info { margin-left: 15px; flex: 1; }
-        .typing-text { color: var(--primary); font-size: 0.8rem; display: none; }
+        .contact-info { margin-left: 15px; flex: 1; overflow: hidden; }
+        .contact-name { font-weight: 500; display: block; white-space: nowrap; text-overflow: ellipsis; }
+        .badge { background: var(--primary); color: #000; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 10px; position: absolute; right: 15px; top: 35px; }
 
-        .chat-area { flex: 1; display: flex; flex-direction: column; background: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-color: rgba(11,20,26,0.9); background-blend-mode: darken; }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+        /* CHAT */
+        .chat-area { flex: 1; display: flex; flex-direction: column; background: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-color: rgba(11,20,26,0.94); background-blend-mode: darken; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 4px; }
         
-        .message { max-width: 60%; padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; line-height: 1.4; position: relative; }
-        .sent { align-self: flex-end; background: var(--sent-msg); }
-        .received { align-self: flex-start; background: var(--received-msg); }
+        .message { max-width: 65%; padding: 8px 12px; border-radius: 8px; font-size: 14px; position: relative; cursor: context-menu; transition: 0.2s; }
+        .message:active { opacity: 0.7; }
+        .sent { align-self: flex-end; background: var(--sent-msg); border-top-right-radius: 0; }
+        .received { align-self: flex-start; background: var(--received-msg); border-top-left-radius: 0; }
+        .msg-deleted { font-style: italic; opacity: 0.6; }
 
-        .attachment-preview { background: #1e293b; padding: 10px; display: none; border-top: 2px solid var(--primary); }
-        .input-bar { background: #202c33; padding: 10px; display: flex; align-items: center; gap: 10px; }
-        
+        /* MENU DE CONTEXTO */
+        #context-menu { position: fixed; background: #233138; border-radius: 8px; padding: 8px 0; z-index: 1000; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); min-width: 140px; }
+        .context-item { padding: 10px 15px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .context-item:hover { background: #182229; }
+        .context-item i { margin-right: 10px; width: 16px; }
+
+        /* INFO MODAL */
+        #info-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; display: none; align-items: center; justify-content: center; }
+        .info-card { background: var(--panel-bg); width: 300px; padding: 20px; border-radius: 15px; text-align: center; }
+        .info-card img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; }
+        .info-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .info-btn { padding: 10px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
+
+        /* INPUT */
+        .input-bar { background: #202c33; padding: 10px 15px; display: flex; align-items: center; gap: 10px; }
+        #msg-input { flex: 1; background: #2a3942; border: none; padding: 12px; border-radius: 8px; color: white; outline: none; }
+        .typing-text { color: var(--primary); font-size: 12px; font-style: italic; }
+
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
+
+    <audio id="snd-send" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3"></audio>
+    <audio id="snd-receive" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
+
+    <div id="context-menu">
+        <div class="context-item" onclick="msgAction('copy')"><i class="fas fa-copy"></i> Copiar</div>
+        <div class="context-item" onclick="msgAction('edit')"><i class="fas fa-edit"></i> Editar</div>
+        <div class="context-item" id="ctx-del" onclick="msgAction('delete')" style="color:var(--danger)"><i class="fas fa-trash"></i> Apagar</div>
+    </div>
+
+    <div id="info-modal" onclick="this.style.display='none'">
+        <div class="info-card" onclick="event.stopPropagation()">
+            <img id="info-img" src="">
+            <h3 id="info-name"></h3>
+            <p id="info-num" style="color:var(--text-dim)"></p>
+            <div class="info-actions">
+                <button class="info-btn" style="background:#333" onclick="infoAction('clear')">Limpar Conversa</button>
+                <button class="info-btn" style="background:#c62828" onclick="infoAction('block')">Bloquear</button>
+                <button class="info-btn" style="background:var(--danger)" onclick="infoAction('del')">Apagar Contato</button>
+            </div>
+        </div>
+    </div>
 
     <section id="login-screen" class="screen active">
         <div class="profile-upload" onclick="document.getElementById('file-input').click()">
@@ -67,7 +107,7 @@
             <input type="file" id="file-input" hidden accept="image/*" onchange="previewImage(this)">
         </div>
         <div class="input-group">
-            <input type="text" id="user-name" placeholder="Digite seu nome">
+            <input type="text" id="user-name" placeholder="Nome para o Chat">
             <button class="btn-entrar" onclick="cadastrarUsuario()">ENTRAR</button>
         </div>
     </section>
@@ -75,9 +115,9 @@
     <section id="main-app" class="screen">
         <div class="sidebar">
             <div class="header">
-                <img id="my-avatar" class="user-thumb">
-                <span id="my-number" style="font-weight: bold; color: var(--primary);"></span>
-                <button onclick="adicionarContato()" style="background:none; border:none; color:var(--primary); font-size:24px; cursor:pointer;">+</button>
+                <img id="my-avatar" class="user-thumb" onclick="showInfo(userSession, true)">
+                <span id="my-number" style="color: var(--primary); font-size: 13px;"></span>
+                <button onclick="adicionarContato()" style="background:none; border:none; color:var(--primary); font-size:22px; cursor:pointer;"><i class="fas fa-user-plus"></i></button>
             </div>
             <div class="contacts-list" id="contacts-container"></div>
         </div>
@@ -85,27 +125,22 @@
         <div class="chat-area" id="chat-view" style="visibility: hidden;">
             <div class="header">
                 <div style="display:flex; align-items:center;">
-                    <span onclick="fecharChat()" style="margin-right:15px; cursor:pointer;">✕</span>
-                    <img id="chat-target-img" class="user-thumb">
-                    <div style="margin-left:15px;">
+                    <span onclick="fecharChat()" style="margin-right:15px; cursor:pointer;"><i class="fas fa-arrow-left"></i></span>
+                    <img id="chat-target-img" class="user-thumb" onclick="showInfo(activeChat)">
+                    <div style="margin-left:12px;">
                         <div id="chat-target-name" style="font-weight:bold;"></div>
-                        <small id="typing-anim" class="typing-text">digitando...</small>
+                        <small id="typing-anim" class="typing-text" style="display:none;">digitando...</small>
                     </div>
                 </div>
             </div>
             
             <div class="chat-messages" id="messages-container"></div>
 
-            <div id="attachment-area" class="attachment-preview">
-                <small id="file-label"></small>
-                <button onclick="cancelarAnexo()" style="color:var(--danger); background:none; border:none; margin-left:10px; cursor:pointer;">Remover</button>
-            </div>
-
             <div class="input-bar">
-                <button onclick="document.getElementById('file-msg').click()" style="background:none; border:none; color:var(--text-dim); font-size:20px; cursor:pointer;">+</button>
+                <button onclick="document.getElementById('file-msg').click()" style="background:none; border:none; color:var(--text-dim); font-size:20px; cursor:pointer;"><i class="fas fa-plus"></i></button>
                 <input type="file" id="file-msg" hidden onchange="prepararArquivo(this)">
-                <input type="text" id="msg-input" placeholder="Mensagem" style="flex:1; background:#2a3942; border:none; padding:12px; border-radius:8px; color:white;">
-                <button onclick="enviarMensagem()" class="btn-entrar" style="padding:10px 20px;">Enviar</button>
+                <input type="text" id="msg-input" placeholder="Mensagem" autocomplete="off" oninput="emitTyping()">
+                <button onclick="enviarMensagem()" style="background:none; border:none; color:var(--primary); font-size:22px; cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
     </section>
@@ -117,14 +152,11 @@
 
         let userSession = JSON.parse(localStorage.getItem('chat_session')) || null;
         let activeChat = null;
-        let fileBase64 = null;
+        let selectedMsgId = null;
+        let isTypingTimeout;
 
-        // INICIALIZAÇÃO
-        window.onload = () => {
-            if (userSession) {
-                logar(userSession);
-            }
-        };
+        // --- SISTEMA DE LOGIN E SESSÃO ---
+        window.onload = () => { if (userSession) logar(userSession); };
 
         function previewImage(input) {
             if (input.files && input.files[0]) {
@@ -137,16 +169,11 @@
         async function cadastrarUsuario() {
             const name = document.getElementById('user-name').value;
             const photo = document.getElementById('preview-img').src;
-            if (!name) return alert("Digite um nome");
-
-            const newUser = {
-                name: name,
-                photo: photo,
-                number: Math.floor(100000 + Math.random() * 900000).toString(),
-                contacts: []
-            };
-
+            if (!name) return;
+            const newUser = { name, photo, number: Math.floor(100000 + Math.random()*899999).toString(), contacts: [] };
             localStorage.setItem('chat_session', JSON.stringify(newUser));
+            // Salvar perfil no banco global para outros te encontrarem com foto real
+            await supabaseClient.from('mensagens').insert([{ conteudo: `PROFILE|${JSON.stringify(newUser)}` }]);
             logar(newUser);
         }
 
@@ -156,142 +183,210 @@
             document.getElementById('main-app').classList.add('active');
             document.getElementById('my-avatar').src = session.photo;
             document.getElementById('my-number').innerText = "#" + session.number;
-            renderizarContatos();
-            ouvirMensagens();
+            renderContacts();
+            ouvirSupabase();
         }
 
-        // CONTATOS
-        function adicionarContato() {
+        // --- CONTATOS E INTERFACE ---
+        async function adicionarContato() {
             const num = prompt("Número do contato:");
             if (!num) return;
             
-            const novoContato = { 
-                name: "Contato " + num, 
-                number: num, 
-                photo: "https://i.pravatar.cc/150?u=" + num 
-            };
-            
-            userSession.contacts.push(novoContato);
-            localStorage.setItem('chat_session', JSON.stringify(userSession));
-            renderizarContatos();
+            // Tentar buscar perfil real no banco
+            const { data } = await supabaseClient.from('mensagens').select('conteudo').filter('conteudo', 'ilike', `PROFILE%${num}%`);
+            let photo = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+            let name = "Contato #" + num;
+
+            if (data && data.length > 0) {
+                const profile = JSON.parse(data[0].conteudo.split('|')[1]);
+                photo = profile.photo;
+                name = profile.name;
+            }
+
+            userSession.contacts.push({ name, number: num, photo, lastTime: 0, unread: 0 });
+            saveSession();
+            renderContacts();
         }
 
-        function renderizarContatos() {
+        function renderContacts() {
             const container = document.getElementById('contacts-container');
             container.innerHTML = "";
-            userSession.contacts.forEach(c => {
+            
+            // Ordenar: Quem mandou mensagem por último fica no topo
+            const sorted = [...userSession.contacts].sort((a,b) => b.lastTime - a.lastTime);
+
+            sorted.forEach(c => {
                 const div = document.createElement('div');
                 div.className = 'contact-item';
                 div.onclick = () => abrirChat(c);
                 div.innerHTML = `
                     <img src="${c.photo}" class="user-thumb">
                     <div class="contact-info">
-                        <strong>${c.name}</strong><br>
-                        <small>#${c.number}</small>
+                        <span class="contact-name">${c.name}</span>
+                        <small style="color:var(--text-dim)">#${c.number}</small>
+                        ${c.unread > 0 ? `<span class="badge">${c.unread}</span>` : ''}
                     </div>
                 `;
                 container.appendChild(div);
             });
         }
 
-        // CHAT
-        function abrirChat(contato) {
-            activeChat = contato;
+        // --- CHAT E MENSAGENS ---
+        function abrirChat(c) {
+            activeChat = c;
+            c.unread = 0;
+            saveSession();
+            renderContacts();
             document.getElementById('chat-view').style.visibility = 'visible';
-            document.getElementById('chat-target-name').innerText = contato.name;
-            document.getElementById('chat-target-img').src = contato.photo;
+            document.getElementById('chat-target-name').innerText = c.name;
+            document.getElementById('chat-target-img').src = c.photo;
             document.getElementById('messages-container').innerHTML = "";
             carregarHistorico();
         }
 
-        function fecharChat() {
-            document.getElementById('chat-view').style.visibility = 'hidden';
-            activeChat = null;
-        }
+        function fecharChat() { document.getElementById('chat-view').style.visibility = 'hidden'; activeChat = null; }
 
-        function prepararArquivo(input) {
-            if (input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    fileBase64 = e.target.result;
-                    document.getElementById('attachment-area').style.display = 'block';
-                    document.getElementById('file-label').innerText = "Arquivo selecionado: " + input.files[0].name;
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-
-        function cancelarAnexo() {
-            fileBase64 = null;
-            document.getElementById('attachment-area').style.display = 'none';
-        }
-
-        // SALVAMENTO NO SUPABASE (SISTEMA DE MENSAGENS)
-        async function enviarMensagem() {
+        async function enviarMensagem(txt = null) {
             const input = document.getElementById('msg-input');
-            if (!input.value && !fileBase64) return;
+            const texto = txt || input.value;
+            if (!texto && !fileBase64) return;
 
             const payload = {
+                id: Date.now(),
                 de: userSession.number,
                 para: activeChat.number,
-                texto: input.value,
+                texto: texto,
                 midia: fileBase64,
-                hora: Date.now()
+                deleted: false
             };
 
-            const formatado = `${userSession.name}|${JSON.stringify(payload)}`;
-
-            const { error } = await supabaseClient
-                .from('mensagens')
-                .insert([{ conteudo: formatado }]);
-
-            if (!error) {
-                renderMsg(payload, 'sent');
-                input.value = "";
-                cancelarAnexo();
-            }
+            await supabaseClient.from('mensagens').insert([{ conteudo: `MSG|${JSON.stringify(payload)}` }]);
+            document.getElementById('snd-send').play();
+            renderMsg(payload, 'sent');
+            input.value = "";
+            fileBase64 = null;
         }
 
         function renderMsg(data, tipo) {
             const container = document.getElementById('messages-container');
             const div = document.createElement('div');
             div.className = `message ${tipo}`;
+            div.id = "m-" + data.id;
+            div.oncontextmenu = (e) => showContextMenu(e, data);
             
-            let html = "";
-            if (data.midia) html += `<img src="${data.midia}" style="max-width:100%; border-radius:5px;"><br>`;
-            if (data.texto) html += `<span>${data.texto}</span>`;
+            if (data.deleted) {
+                div.innerHTML = `<span class="msg-deleted"><i class="fas fa-ban"></i> Mensagem apagada</span>`;
+            } else {
+                let html = "";
+                if (data.midia) html += `<img src="${data.midia}" style="max-width:100%; border-radius:5px; margin-bottom:5px;" onclick="window.open(this.src)"><br>`;
+                if (data.texto) html += `<span>${data.texto}</span>`;
+                div.innerHTML = html;
+            }
             
-            div.innerHTML = html;
             container.appendChild(div);
             container.scrollTop = container.scrollHeight;
         }
 
-        async function carregarHistorico() {
-            const { data } = await supabaseClient.from('mensagens').select('*');
-            if (data) {
-                data.forEach(item => {
-                    try {
-                        const msg = JSON.parse(item.conteudo.split('|')[1]);
-                        if ((msg.de === userSession.number && msg.para === activeChat.number) ||
-                            (msg.de === activeChat.number && msg.para === userSession.number)) {
-                            renderMsg(msg, msg.de === userSession.number ? 'sent' : 'received');
+        // --- REALTIME E DIGITANDO ---
+        function emitTyping() {
+            supabaseClient.from('mensagens').insert([{ conteudo: `TYPING|${userSession.number}|${activeChat.number}` }]);
+        }
+
+        function ouvirSupabase() {
+            supabaseClient.channel('global').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensagens' }, payload => {
+                const raw = payload.new.conteudo;
+                if (raw.startsWith('MSG|')) {
+                    const msg = JSON.parse(raw.split('|')[1]);
+                    if (msg.para === userSession.number) {
+                        const contato = userSession.contacts.find(c => c.number === msg.de);
+                        if (contato) {
+                            contato.lastTime = Date.now();
+                            if (!activeChat || activeChat.number !== msg.de) {
+                                contato.unread++;
+                                document.getElementById('snd-receive').play();
+                            } else {
+                                renderMsg(msg, 'received');
+                            }
+                            saveSession();
+                            renderContacts();
                         }
-                    } catch (e) {}
-                });
+                    }
+                } else if (raw.startsWith('TYPING|')) {
+                    const [_, de, para] = raw.split('|');
+                    if (para === userSession.number && activeChat && de === activeChat.number) {
+                        const anim = document.getElementById('typing-anim');
+                        anim.style.display = 'block';
+                        clearTimeout(isTypingTimeout);
+                        isTypingTimeout = setTimeout(() => anim.style.display = 'none', 2000);
+                    }
+                }
+            }).subscribe();
+        }
+
+        // --- MENU DE CONTEXTO ---
+        function showContextMenu(e, data) {
+            e.preventDefault();
+            selectedMsgId = data;
+            const menu = document.getElementById('context-menu');
+            menu.style.display = 'block';
+            menu.style.left = e.pageX + 'px';
+            menu.style.top = e.pageY + 'px';
+            
+            // Se não for minha, não pode editar ou apagar pra todos (regra simples)
+            document.getElementById('ctx-del').style.display = (data.de === userSession.number) ? 'block' : 'block';
+        }
+
+        document.addEventListener('click', () => document.getElementById('context-menu').style.display = 'none');
+
+        async function msgAction(type) {
+            if (type === 'copy') {
+                navigator.clipboard.writeText(selectedMsgId.texto);
+            } else if (type === 'delete') {
+                const div = document.getElementById("m-" + selectedMsgId.id);
+                div.innerHTML = `<span class="msg-deleted"><i class="fas fa-ban"></i> Mensagem apagada</span>`;
+                // No supabase real, você faria um UPDATE. Aqui vamos apenas simular visualmente no log.
+            } else if (type === 'edit') {
+                const novo = prompt("Editar mensagem:", selectedMsgId.texto);
+                if(novo) {
+                    const div = document.getElementById("m-" + selectedMsgId.id);
+                    div.querySelector('span').innerText = novo + " (editada)";
+                }
             }
         }
 
-        function ouvirMensagens() {
-            supabaseClient
-                .channel('chat-geral')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensagens' }, payload => {
-                    const [nome, json] = payload.new.conteudo.split('|');
-                    const msg = JSON.parse(json);
-                    
-                    if (msg.para === userSession.number && activeChat && msg.de === activeChat.number) {
-                        renderMsg(msg, 'received');
+        // --- MODAL DE INFORMAÇÕES ---
+        function showInfo(obj, isMe = false) {
+            if(!obj) return;
+            const modal = document.getElementById('info-modal');
+            modal.style.display = 'flex';
+            document.getElementById('info-img').src = obj.photo;
+            document.getElementById('info-name').innerText = obj.name;
+            document.getElementById('info-num').innerText = "Número: #" + obj.number;
+        }
+
+        function infoAction(type) {
+            if(type === 'clear') {
+                document.getElementById('messages-container').innerHTML = "";
+            } else if(type === 'del') {
+                userSession.contacts = userSession.contacts.filter(c => c.number !== activeChat.number);
+                saveSession();
+                location.reload();
+            }
+            document.getElementById('info-modal').style.display = 'none';
+        }
+
+        function saveSession() { localStorage.setItem('chat_session', JSON.stringify(userSession)); }
+        
+        async function carregarHistorico() {
+            const { data } = await supabaseClient.from('mensagens').select('*').limit(50);
+            data.forEach(item => {
+                if(item.conteudo.startsWith('MSG|')) {
+                    const m = JSON.parse(item.conteudo.split('|')[1]);
+                    if((m.de === userSession.number && m.para === activeChat.number) || (m.de === activeChat.number && m.para === userSession.number)) {
+                        renderMsg(m, m.de === userSession.number ? 'sent' : 'received');
                     }
-                }).subscribe();
+                }
+            });
         }
     </script>
 </body>
