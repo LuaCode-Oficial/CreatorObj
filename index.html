@@ -3,397 +3,409 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Pro Connect</title>
+    <title>FlashHost - Premium</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
         :root {
-            --bg-dark: #0b141a;
-            --panel-bg: #111b21;
-            --chat-bg: #0b141a;
-            --primary: #00a884;
-            --text-main: #e9edef;
-            --text-dim: #8696a0;
-            --sent-msg: #005c4b;
-            --received-msg: #202c33;
-            --danger: #ff4b5c;
+            --primary: #6366f1;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --sidebar-w: 250px;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: var(--bg-dark); color: var(--text-main); height: 100vh; overflow: hidden; }
+        body, html {
+            margin: 0; padding: 0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+        }
 
-        .screen { position: fixed; inset: 0; display: none; flex-direction: column; z-index: 10; background: var(--bg-dark); }
-        .screen.active { display: flex; animation: fadeIn 0.3s ease; }
+        /* --- MENU LATERAL (SIDEBAR) --- */
+        .sidebar {
+            position: fixed;
+            left: calc(-1 * var(--sidebar-w));
+            top: 0;
+            width: var(--sidebar-w);
+            height: 100%;
+            background: var(--card);
+            z-index: 2000;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+            padding: 20px;
+            box-sizing: border-box;
+        }
 
-        /* LOGIN */
-        #login-screen { align-items: center; justify-content: center; }
-        .profile-upload { width: 150px; height: 150px; border-radius: 50%; background: #202c33; margin-bottom: 20px; cursor: pointer; overflow: hidden; border: 3px solid var(--primary); }
-        #preview-img { width: 100%; height: 100%; object-fit: cover; }
-        .input-group { width: 300px; display: flex; flex-direction: column; gap: 15px; }
-        input[type="text"] { background: #2a3942; border: none; padding: 15px; border-radius: 8px; color: white; outline: none; border: 1px solid transparent; }
-        .btn-entrar { background: var(--primary); color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .sidebar.active { left: 0; }
 
-        /* APP */
-        #main-app { flex-direction: row; }
-        .sidebar { width: 350px; border-right: 1px solid rgba(255,255,255,0.1); background: var(--panel-bg); display: flex; flex-direction: column; position: relative; }
-        .header { background: #202c33; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; z-index: 5; }
-        .user-thumb { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: #333; cursor: pointer; }
+        .menu-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 2100;
+            background: var(--primary);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex; align-items: center;
+        }
 
-        .contacts-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-        .contact-item { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); order: 2; transition: background 0.2s; }
-        .contact-item.new-msg { order: 1; background: rgba(0, 168, 132, 0.1); }
-        .contact-item:hover { background: #2a3942; }
-        .contact-info { margin-left: 15px; flex: 1; overflow: hidden; }
-        .contact-name { font-weight: 500; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .badge { background: var(--primary); color: white; border-radius: 50%; padding: 2px 7px; font-size: 10px; float: right; margin-top: 5px; }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #94a3b8;
+        }
 
-        /* CHAT */
-        .chat-area { flex: 1; display: flex; flex-direction: column; background: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-color: rgba(11,20,26,0.92); background-blend-mode: darken; }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 4px; }
-        
-        .message { max-width: 65%; padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; position: relative; cursor: pointer; user-select: none; transition: background 0.2s; }
-        .sent { align-self: flex-end; background: var(--sent-msg); border-top-right-radius: 0; }
-        .received { align-self: flex-start; background: var(--received-msg); border-top-left-radius: 0; }
-        .msg-deleted { font-style: italic; color: var(--text-dim); }
+        .nav-item:hover, .nav-item.active {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--primary);
+        }
 
-        /* MODAIS / CONTEXTO */
-        .context-menu { position: fixed; background: #233138; border-radius: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 100; display: none; padding: 5px 0; width: 120px; }
-        .context-menu div { padding: 10px 15px; cursor: pointer; font-size: 14px; }
-        .context-menu div:hover { background: #182229; }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1900;
+        }
 
-        #profile-modal { position: absolute; inset: 0; background: var(--bg-dark); z-index: 200; display: none; flex-direction: column; align-items: center; padding: 40px 20px; }
+        /* --- CONTEÚDO --- */
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            transition: opacity 0.3s;
+        }
 
-        .typing-anim { color: var(--primary); font-size: 0.8rem; display: none; }
+        .upload-card {
+            background: var(--card);
+            padding: 40px;
+            border-radius: 24px;
+            text-align: center;
+            border: 2px dashed #334155;
+            max-width: 400px; width: 100%;
+        }
 
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* --- GALERIA "MINHAS" --- */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+            margin-top: 60px;
+        }
+
+        .gallery-item {
+            background: var(--card);
+            border-radius: 15px;
+            overflow: hidden;
+            aspect-ratio: 1;
+            cursor: pointer;
+            position: relative;
+            border: 1px solid #334155;
+            transition: 0.2s;
+        }
+
+        .gallery-item:hover { transform: scale(1.03); border-color: var(--primary); }
+
+        .gallery-item img, .gallery-item video {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+
+        /* --- BOTÕES E MODAIS --- */
+        .btn-main {
+            background: var(--primary);
+            color: white; border: none;
+            padding: 14px 28px; border-radius: 12px;
+            font-size: 16px; cursor: pointer;
+            display: flex; align-items: center; gap: 10px;
+            margin: 20px auto 0;
+        }
+
+        .modal {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+            align-items: center; justify-content: center; z-index: 3000;
+        }
+
+        .modal-content {
+            background: var(--card); padding: 30px; border-radius: 20px;
+            max-width: 350px; text-align: center;
+        }
+
+        .fullscreen-view {
+            display: none; position: fixed; top:0; left:0; width: 100%; height: 100%;
+            background: black; z-index: 4000;
+        }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <audio id="snd-send" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3"></audio>
-    <audio id="snd-recv" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
+    <button class="menu-toggle" onclick="toggleSidebar()">
+        <i data-lucide="menu"></i>
+    </button>
 
-    <section id="login-screen" class="screen active">
-        <div class="profile-upload" onclick="document.getElementById('file-input').click()">
-            <img id="preview-img" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
-            <input type="file" id="file-input" hidden accept="image/*" onchange="previewImage(this)">
-        </div>
-        <div class="input-group">
-            <input type="text" id="user-name" placeholder="Nome para o perfil">
-            <button class="btn-entrar" onclick="cadastrarUsuario()">COMEÇAR</button>
-        </div>
-    </section>
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
-    <section id="main-app" class="screen">
-        <div class="sidebar">
-            <div class="header">
-                <img id="my-avatar" class="user-thumb" onclick="verMeuPerfil()">
-                <span id="my-number" style="color: var(--primary); font-size: 12px;"></span>
-                <button onclick="adicionarContato()" style="background:none; border:none; color:var(--primary); font-size:24px; cursor:pointer;">+</button>
+    <nav class="sidebar" id="sidebar">
+        <h2 style="margin-bottom: 30px; color: var(--primary)">FlashHost</h2>
+        <div class="nav-item active" id="nav-home" onclick="switchTab('home')">
+            <i data-lucide="home"></i> Início
+        </div>
+        <div class="nav-item" id="nav-my" onclick="switchTab('my')">
+            <i data-lucide="folder-heart"></i> Minhas
+        </div>
+    </nav>
+
+    <div class="container" id="mainApp">
+        
+        <div id="tab-home" class="tab-content">
+            <div id="step1" class="upload-card">
+                <i data-lucide="cloud-upload" stroke-width="1.5" size="64" style="color: var(--primary)"></i>
+                <h2>Hospedar Arquivo</h2>
+                <p style="color: #94a3b8">Selecione uma imagem ou vídeo</p>
+                <input type="file" id="fileInput" accept="image/*,video/*" class="hidden">
+                <button class="btn-main" onclick="document.getElementById('fileInput').click()">
+                    <i data-lucide="folder-open"></i> Selecionar
+                </button>
             </div>
-            <div class="contacts-list" id="contacts-container"></div>
 
-            <div id="profile-modal">
-                <span onclick="this.parentElement.style.display='none'" style="align-self:flex-start; cursor:pointer; font-size:24px;">✕</span>
-                <img id="view-profile-img" style="width:200px; height:200px; border-radius:50%; object-fit:cover; margin:20px 0;">
-                <h2 id="view-profile-name"></h2>
-                <p id="view-profile-num" style="color:var(--text-dim)"></p>
-                <div style="margin-top:30px; width:100%; display:flex; flex-direction:column; gap:10px;">
-                    <button onclick="limparConversa()" class="btn-entrar" style="background:#3b4a54">Limpar Conversa</button>
-                    <button onclick="excluirContato()" class="btn-entrar" style="background:var(--danger)">Apagar Contato</button>
+            <div id="step3" class="result-screen hidden">
+                <div id="mediaPreviewContainer" style="max-width: 400px; margin: 0 auto"></div>
+                <div style="background: #0f172a; padding: 15px; border-radius: 12px; display: flex; gap: 10px; margin-top: 20px">
+                    <input type="text" id="generatedLink" readonly style="background: transparent; border: none; color: #94a3b8; flex: 1">
+                    <button onclick="copyLink()" style="background: none; border: none; color: var(--primary); cursor: pointer">
+                        <i data-lucide="copy"></i>
+                    </button>
                 </div>
+                <button class="btn-main" style="background: #334155" onclick="switchTab('home')">Subir outro</button>
             </div>
         </div>
 
-        <div class="chat-area" id="chat-view" style="visibility: hidden;">
-            <div class="header">
-                <div style="display:flex; align-items:center;">
-                    <span onclick="fecharChat()" style="margin-right:15px; cursor:pointer;">✕</span>
-                    <img id="chat-target-img" class="user-thumb" onclick="verPerfilContato()">
-                    <div style="margin-left:15px;">
-                        <div id="chat-target-name" style="font-weight:bold;"></div>
-                        <small id="typing-status" class="typing-anim">digitando...</small>
-                    </div>
+        <div id="tab-my" class="tab-content hidden">
+            <h2 style="text-align: center">Meus Arquivos</h2>
+            <div class="gallery-grid" id="galleryGrid">
                 </div>
-            </div>
-            
-            <div class="chat-messages" id="messages-container"></div>
+        </div>
 
-            <div id="attachment-area" style="display:none; padding:10px; background:#1e293b; border-left:4px solid var(--primary);">
-                <small id="file-label"></small>
-                <button onclick="cancelarAnexo()" style="color:var(--danger); background:none; border:none; float:right;">✕</button>
-            </div>
+    </div>
 
-            <div class="input-bar" style="background:#202c33; padding:10px; display:flex; align-items:center; gap:10px;">
-                <button onclick="document.getElementById('file-msg').click()" style="background:none; border:none; color:var(--text-dim); font-size:22px; cursor:pointer;">+</button>
-                <input type="file" id="file-msg" hidden onchange="prepararArquivo(this)">
-                <input type="text" id="msg-input" placeholder="Mensagem" style="flex:1; background:#2a3942; border:none; padding:12px; border-radius:8px; color:white;" oninput="enviarDigitando()">
-                <button onclick="enviarMensagem()" class="btn-entrar" style="padding:10px 20px;">➤</button>
+    <div class="modal" id="confirmModal">
+        <div class="modal-content">
+            <i data-lucide="help-circle" size="48" style="color: var(--primary)"></i>
+            <h3>Deseja hospedar?</h3>
+            <p id="fileNameDisplay" style="font-size: 14px; color: #94a3b8; margin: 10px 0"></p>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px">
+                <button id="uploadBtn" class="btn-main" style="margin:0" onclick="confirmUpload()">Hospedar</button>
+                <button class="btn-main" style="background: #ef4444; margin:0" onclick="closeModal()">Sair</button>
             </div>
         </div>
-    </section>
+    </div>
 
-    <div id="context-menu" class="context-menu">
-        <div id="ctx-copy" onclick="copiarTexto()">Copiar</div>
-        <div id="ctx-del" onclick="apagarMensagem()" style="color:var(--danger)">Apagar</div>
+    <div id="fullscreenView" class="fullscreen-view">
+        <div id="fullContent" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;"></div>
+        <button onclick="closeFullscreen()" style="position:fixed; top:20px; right:20px; background:rgba(255,255,255,0.2); border:none; color:white; padding:15px; border-radius:50%; cursor:pointer;">
+            <i data-lucide="x"></i>
+        </button>
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://mgrvyboskvvlcvqclufh.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_HsVRJqKhYoCCVTnPTvgp9w_okpI3WE0';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        lucide.createIcons();
 
-        let userSession = JSON.parse(localStorage.getItem('chat_session')) || null;
-        let activeChat = null;
-        let fileBase64 = null;
-        let msgSelecionadaId = null;
-        let typingTimeout;
+        // Configurações do Supabase
+        const supabaseUrl = 'https://mgrvyboskvvlcvqclufh.supabase.co';
+        const supabaseKey = 'sb_publishable_HsVRJqKhYoCCVTnPTvgp9w_okpI3WE0';
+        const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-        window.onload = () => userSession && logar(userSession);
+        let selectedFile = null;
+        let myUploads = JSON.parse(localStorage.getItem('flashhost_uploads') || '[]');
 
-        function previewImage(input) {
-            if (input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => document.getElementById('preview-img').src = e.target.result;
-                reader.readAsDataURL(input.files[0]);
-            }
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('overlay').style.display = 
+                document.getElementById('sidebar').classList.contains('active') ? 'block' : 'none';
         }
 
-        function logar(session) {
-            userSession = session;
-            document.getElementById('login-screen').classList.remove('active');
-            document.getElementById('main-app').classList.add('active');
-            document.getElementById('my-avatar').src = session.photo;
-            document.getElementById('my-number').innerText = "#" + session.number;
-            renderizarContatos();
-            ouvirSupabase();
-        }
-
-        async function cadastrarUsuario() {
-            const name = document.getElementById('user-name').value;
-            const photo = document.getElementById('preview-img').src;
-            if (!name) return alert("Digite um nome!");
-
-            const newUser = { 
-                name, photo, 
-                number: Math.floor(100000 + Math.random() * 899999).toString(), 
-                contacts: [] 
-            };
-            localStorage.setItem('chat_session', JSON.stringify(newUser));
-            logar(newUser);
-        }
-
-        function adicionarContato() {
-            const num = prompt("Número do contato:");
-            const nome = prompt("Nome do contato:");
-            if (!num || !nome) return;
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             
-            const novo = { name: nome, number: num, photo: `https://ui-avatars.com/api/?name=${nome}&background=00a884&color=fff` };
-            userSession.contacts.push(novo);
-            localStorage.setItem('chat_session', JSON.stringify(userSession));
-            renderizarContatos();
-        }
-
-        function renderizarContatos() {
-            const container = document.getElementById('contacts-container');
-            container.innerHTML = "";
-            userSession.contacts.forEach(c => {
-                const div = document.createElement('div');
-                div.className = 'contact-item';
-                div.id = `cnt-${c.number}`;
-                div.onclick = () => abrirChat(c);
-                div.innerHTML = `
-                    <img src="${c.photo}" class="user-thumb">
-                    <div class="contact-info">
-                        <span class="contact-name">${c.name}</span>
-                        <small style="color:var(--text-dim)">#${c.number}</small>
-                    </div>
-                    <div id="badge-${c.number}" class="badge" style="display:none">0</div>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        async function abrirChat(contato) {
-            activeChat = contato;
-            document.getElementById('chat-view').style.visibility = 'visible';
-            document.getElementById('chat-target-name').innerText = contato.name;
-            document.getElementById('chat-target-img').src = contato.photo;
-            document.getElementById('badge-' + contato.number).style.display = 'none';
-            document.getElementById('badge-' + contato.number).innerText = '0';
-            document.getElementById(`cnt-${contato.number}`).classList.remove('new-msg');
-            carregarHistorico();
-        }
-
-        function fecharChat() {
-            document.getElementById('chat-view').style.visibility = 'hidden';
-            activeChat = null;
-        }
-
-        // --- SISTEMA DE MENSAGENS ---
-        async function enviarMensagem() {
-            const input = document.getElementById('msg-input');
-            if (!input.value && !fileBase64) return;
-
-            const payload = {
-                id: Date.now(),
-                de: userSession.number,
-                para: activeChat.number,
-                texto: input.value,
-                midia: fileBase64,
-                apagada: false,
-                hora: new Date().toISOString()
-            };
-
-            const formatado = `${userSession.name}|${JSON.stringify(payload)}`;
-            await supabaseClient.from('mensagens').insert([{ conteudo: formatado }]);
-            
-            document.getElementById('snd-send').play();
-            renderMsg(payload, 'sent');
-            input.value = "";
-            cancelarAnexo();
-        }
-
-        function renderMsg(data, tipo) {
-            const container = document.getElementById('messages-container');
-            const div = document.createElement('div');
-            div.className = `message ${tipo}`;
-            div.id = `msg-${data.id}`;
-            div.oncontextmenu = (e) => mostrarContexto(e, data);
-            
-            if (data.apagada) {
-                div.innerHTML = `<span class="msg-deleted">🚫 Mensagem apagada</span>`;
+            if(tab === 'home') {
+                document.getElementById('tab-home').classList.remove('hidden');
+                document.getElementById('nav-home').classList.add('active');
+                document.getElementById('step1').classList.remove('hidden');
+                document.getElementById('step3').classList.add('hidden');
             } else {
-                let html = "";
-                if (data.midia) html += `<img src="${data.midia}" style="max-width:100%; border-radius:5px; margin-bottom:5px;" onclick="window.open('${data.midia}')">`;
-                if (data.texto) html += `<span>${data.texto}</span>`;
-                div.innerHTML = html;
+                document.getElementById('tab-my').classList.remove('hidden');
+                document.getElementById('nav-my').classList.add('active');
+                renderGallery();
             }
-            
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
+            if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar();
         }
 
-        async function carregarHistorico() {
-            const container = document.getElementById('messages-container');
-            container.innerHTML = "";
-            const { data } = await supabaseClient.from('mensagens').select('*');
-            if (data) {
-                data.forEach(item => {
-                    try {
-                        const msg = JSON.parse(item.conteudo.split('|')[1]);
-                        if ((msg.de === userSession.number && msg.para === activeChat.number) ||
-                            (msg.de === activeChat.number && msg.para === userSession.number)) {
-                            renderMsg(msg, msg.de === userSession.number ? 'sent' : 'received');
-                        }
-                    } catch (e) {}
-                });
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFile = file;
+                document.getElementById('fileNameDisplay').innerText = file.name;
+                document.getElementById('confirmModal').style.display = 'flex';
             }
-        }
+        });
 
-        // --- REALTIME (OUVIR MUDANÇAS) ---
-        function ouvirSupabase() {
-            supabaseClient.channel('chat-v3').on('postgres_changes', { event: '*', schema: 'public', table: 'mensagens' }, payload => {
-                if (payload.eventType === 'INSERT') {
-                    const parts = payload.new.conteudo.split('|');
-                    const msg = JSON.parse(parts[1]);
+        function closeModal() { document.getElementById('confirmModal').style.display = 'none'; }
 
-                    // Recebeu mensagem
-                    if (msg.para === userSession.number) {
-                        if (activeChat && msg.de === activeChat.number) {
-                            renderMsg(msg, 'received');
-                            document.getElementById('snd-recv').play();
-                        } else {
-                            // Alerta no contato lateral
-                            const b = document.getElementById('badge-' + msg.de);
-                            if (b) {
-                                b.style.display = 'block';
-                                b.innerText = parseInt(b.innerText) + 1;
-                                document.getElementById('cnt-' + msg.de).classList.add('new-msg');
-                            }
-                        }
-                    }
-                }
-                // Digitando (via sistema de visibilidade de strings temporárias)
-                if (payload.new.conteudo.includes('TYPING|')) {
-                    const data = payload.new.conteudo.split('|');
-                    if (data[2] === userSession.number && activeChat && data[1] === activeChat.number) {
-                        document.getElementById('typing-status').style.display = 'block';
-                        clearTimeout(typingTimeout);
-                        typingTimeout = setTimeout(() => document.getElementById('typing-status').style.display='none', 2000);
-                    }
-                }
-            }).subscribe();
-        }
+        // --- SISTEMA DE SALVAMENTO SUPABASE ---
+        async function confirmUpload() {
+            const btn = document.getElementById('uploadBtn');
+            btn.disabled = true;
+            btn.innerText = "Hospedando...";
 
-        async function enviarDigitando() {
-            if (!activeChat) return;
-            // Evita sobrecarregar o banco, manda apenas 1 vez a cada intervalo
-            if (!window.lastTyping || Date.now() - window.lastTyping > 2000) {
-                window.lastTyping = Date.now();
-                await supabaseClient.from('mensagens').insert([{ conteudo: `SYS|TYPING|${userSession.number}|${activeChat.number}` }]);
-            }
-        }
+            try {
+                const fileId = Math.random().toString(36).substring(2, 10);
+                const fileExt = selectedFile.name.split('.').pop();
+                const fileName = `${fileId}.${fileExt}`;
+                const mediaType = selectedFile.type.startsWith('image/') ? 'image' : 'video';
 
-        // --- MENU DE CONTEXTO ---
-        function mostrarContexto(e, data) {
-            e.preventDefault();
-            msgSelecionadaId = data;
-            const menu = document.getElementById('context-menu');
-            menu.style.display = 'block';
-            menu.style.left = e.pageX + 'px';
-            menu.style.top = e.pageY + 'px';
-            
-            // Só pode apagar se for minha
-            document.getElementById('ctx-del').style.display = (data.de === userSession.number) ? 'block' : 'none';
-        }
+                const { data: storageData, error: storageError } = await _supabase.storage
+                    .from('midias')
+                    .upload(fileName, selectedFile);
 
-        document.onclick = () => document.getElementById('context-menu').style.display = 'none';
+                if (storageError) throw storageError;
 
-        async function apagarMensagem() {
-            // No Supabase, para apagar de verdade com esse script, mandamos uma mensagem de "update" 
-            // Para simplificar, vamos inserir uma flag de exclusão
-            const payload = { id: msgSelecionadaId.id, de: userSession.number, para: activeChat.number, apagada: true };
-            await supabaseClient.from('mensagens').insert([{ conteudo: `SYS|DELETE|${JSON.stringify(payload)}` }]);
-            location.reload(); // Recarrega para limpar interface
-        }
+                const { data: { publicUrl } } = _supabase.storage
+                    .from('midias')
+                    .getPublicUrl(fileName);
 
-        function copiarTexto() {
-            navigator.clipboard.writeText(msgSelecionadaId.texto);
-            alert("Copiado!");
-        }
+                const { error: dbError } = await _supabase
+                    .from('datar')
+                    .insert([{ 
+                        id: fileId, 
+                        media_url: publicUrl, 
+                        media_type: mediaType 
+                    }]);
 
-        // --- INTERFACE DE PERFIL ---
-        function verPerfilContato() {
-            const m = document.getElementById('profile-modal');
-            m.style.display = 'flex';
-            document.getElementById('view-profile-img').src = activeChat.photo;
-            document.getElementById('view-profile-name').innerText = activeChat.name;
-            document.getElementById('view-profile-num').innerText = "#" + activeChat.number;
-        }
+                if (dbError) throw dbError;
 
-        function verMeuPerfil() {
-            const m = document.getElementById('profile-modal');
-            m.style.display = 'flex';
-            document.getElementById('view-profile-img').src = userSession.photo;
-            document.getElementById('view-profile-name').innerText = userSession.name + " (Eu)";
-            document.getElementById('view-profile-num').innerText = "#" + userSession.number;
-        }
-
-        // Funções de Arquivo
-        function prepararArquivo(input) {
-            if (input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    fileBase64 = e.target.result;
-                    document.getElementById('attachment-area').style.display = 'block';
-                    document.getElementById('file-label').innerText = "📎 " + input.files[0].name;
+                const newUpload = {
+                    id: fileId,
+                    data: publicUrl,
+                    type: mediaType,
+                    name: selectedFile.name
                 };
-                reader.readAsDataURL(input.files[0]);
+
+                myUploads.push(newUpload);
+                localStorage.setItem('flashhost_uploads', JSON.stringify(myUploads));
+                
+                closeModal();
+                showResult(newUpload);
+
+            } catch (error) {
+                console.error(error);
+                alert("Erro ao hospedar: " + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Hospedar";
             }
         }
-        function cancelarAnexo() {
-            fileBase64 = null;
-            document.getElementById('attachment-area').style.display = 'none';
+
+        function showResult(file) {
+            document.getElementById('step1').classList.add('hidden');
+            document.getElementById('step3').classList.remove('hidden');
+            
+            const container = document.getElementById('mediaPreviewContainer');
+            container.innerHTML = file.type === 'image' 
+                ? `<img src="${file.data}" class="preview-img" style="width:100%; border-radius:15px">`
+                : `<video src="${file.data}" class="preview-img" controls style="width:100%; border-radius:15px"></video>`;
+
+            // --- GERAÇÃO DO LINK ÚNICO ---
+            // Pega o domínio atual (ex: https://seusite.com) e adiciona o ID
+            const baseUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+            document.getElementById('generatedLink').value = `${baseUrl}?id=${file.id}`;
+        }
+
+        function renderGallery() {
+            const grid = document.getElementById('galleryGrid');
+            grid.innerHTML = '';
+            
+            if(myUploads.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; opacity: 0.5">Nenhum arquivo hospedado ainda.</p>';
+                return;
+            }
+
+            myUploads.forEach(file => {
+                const item = document.createElement('div');
+                item.className = 'gallery-item';
+                item.onclick = () => openFullscreen(file);
+                
+                if(file.type === 'image') {
+                    item.innerHTML = `<img src="${file.data}">`;
+                } else {
+                    item.innerHTML = `<video src="${file.data}"></video><div style="position:absolute; top:5px; right:5px; background: rgba(0,0,0,0.5); padding: 2px; border-radius: 4px"><i data-lucide="play" size="16"></i></div>`;
+                }
+                grid.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+
+        function openFullscreen(file) {
+            const content = document.getElementById('fullContent');
+            content.innerHTML = file.type === 'image' || file.media_type === 'image'
+                ? `<img src="${file.data || file.media_url}" style="max-width:90%; max-height:90%; object-fit: contain">`
+                : `<video src="${file.data || file.media_url}" controls autoplay style="max-width:90%; max-height:90%"></video>`;
+            document.getElementById('fullscreenView').style.display = 'block';
+        }
+
+        function closeFullscreen() { 
+            document.getElementById('fullscreenView').style.display = 'none';
+            document.getElementById('fullContent').innerHTML = ''; 
+            // Ao fechar a visualização externa, limpa o ID da URL sem recarregar a página
+            window.history.pushState({}, document.title, window.location.pathname);
+        }
+        
+        function copyLink() {
+            const copyText = document.getElementById("generatedLink");
+            copyText.select();
+            document.execCommand("copy");
+            alert("Link copiado!");
+        }
+
+        // --- SISTEMA DE VISUALIZAÇÃO POR ID ---
+        window.onload = async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+            if (id) {
+                // Busca no Supabase os dados da imagem pelo ID da URL
+                const { data, error } = await _supabase
+                    .from('datar')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+
+                if (data && !error) {
+                    openFullscreen(data);
+                } else {
+                    console.error("Arquivo não encontrado ou erro no banco.");
+                }
+            }
         }
     </script>
 </body>
