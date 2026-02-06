@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FlashHost - Premium</title>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -21,10 +21,11 @@
             font-family: 'Segoe UI', system-ui, sans-serif;
             background-color: var(--bg);
             color: var(--text);
-            overflow-x: hidden;
+            overflow: hidden;
+            width: 100%; height: 100%;
         }
 
-        /* --- MENU LATERAL (SIDEBAR) --- */
+        /* --- MENU LATERAL --- */
         .sidebar {
             position: fixed;
             left: calc(-1 * var(--sidebar-w));
@@ -89,7 +90,7 @@
             justify-content: center;
             min-height: 100vh;
             padding: 20px;
-            transition: opacity 0.3s;
+            overflow-y: auto;
         }
 
         .upload-card {
@@ -101,7 +102,7 @@
             max-width: 400px; width: 100%;
         }
 
-        /* --- GALERIA "MINHAS" --- */
+        /* --- GALERIA --- */
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -119,16 +120,13 @@
             cursor: pointer;
             position: relative;
             border: 1px solid #334155;
-            transition: 0.2s;
         }
-
-        .gallery-item:hover { transform: scale(1.03); border-color: var(--primary); }
 
         .gallery-item img, .gallery-item video {
             width: 100%; height: 100%; object-fit: cover;
         }
 
-        /* --- BOTÕES E MODAIS --- */
+        /* --- BOTÕES --- */
         .btn-main {
             background: var(--primary);
             color: white; border: none;
@@ -150,9 +148,23 @@
             max-width: 350px; text-align: center;
         }
 
+        /* --- TELA CHEIA IMERSIVA (PARA LINKS ÚNICOS) --- */
         .fullscreen-view {
-            display: none; position: fixed; top:0; left:0; width: 100%; height: 100%;
-            background: black; z-index: 4000;
+            display: none; 
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100vw; 
+            height: 100vh;
+            background: black; 
+            z-index: 5000;
+            overflow: hidden;
+        }
+
+        .fullscreen-view img, .fullscreen-view video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Mantém a proporção mas ocupa a tela toda */
+            background: black;
         }
 
         .hidden { display: none !important; }
@@ -160,29 +172,27 @@
 </head>
 <body>
 
-    <button class="menu-toggle" onclick="toggleSidebar()">
-        <i data-lucide="menu"></i>
-    </button>
-
-    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
-
-    <nav class="sidebar" id="sidebar">
-        <h2 style="margin-bottom: 30px; color: var(--primary)">FlashHost</h2>
-        <div class="nav-item active" id="nav-home" onclick="switchTab('home')">
-            <i data-lucide="home"></i> Início
-        </div>
-        <div class="nav-item" id="nav-my" onclick="switchTab('my')">
-            <i data-lucide="folder-heart"></i> Minhas
-        </div>
-    </nav>
+    <div id="ui-controls">
+        <button class="menu-toggle" onclick="toggleSidebar()">
+            <i data-lucide="menu"></i>
+        </button>
+        <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+        <nav class="sidebar" id="sidebar">
+            <h2 style="margin-bottom: 30px; color: var(--primary)">FlashHost</h2>
+            <div class="nav-item active" id="nav-home" onclick="switchTab('home')">
+                <i data-lucide="home"></i> Início
+            </div>
+            <div class="nav-item" id="nav-my" onclick="switchTab('my')">
+                <i data-lucide="folder-heart"></i> Minhas
+            </div>
+        </nav>
+    </div>
 
     <div class="container" id="mainApp">
-        
         <div id="tab-home" class="tab-content">
             <div id="step1" class="upload-card">
                 <i data-lucide="cloud-upload" stroke-width="1.5" size="64" style="color: var(--primary)"></i>
                 <h2>Hospedar Arquivo</h2>
-                <p style="color: #94a3b8">Selecione uma imagem ou vídeo</p>
                 <input type="file" id="fileInput" accept="image/*,video/*" class="hidden">
                 <button class="btn-main" onclick="document.getElementById('fileInput').click()">
                     <i data-lucide="folder-open"></i> Selecionar
@@ -197,41 +207,34 @@
                         <i data-lucide="copy"></i>
                     </button>
                 </div>
-                <button class="btn-main" style="background: #334155" onclick="switchTab('home')">Subir outro</button>
+                <button class="btn-main" style="background: #334155" onclick="location.reload()">Subir outro</button>
             </div>
         </div>
 
         <div id="tab-my" class="tab-content hidden">
             <h2 style="text-align: center">Meus Arquivos</h2>
-            <div class="gallery-grid" id="galleryGrid">
-                </div>
+            <div class="gallery-grid" id="galleryGrid"></div>
         </div>
-
     </div>
 
     <div class="modal" id="confirmModal">
         <div class="modal-content">
-            <i data-lucide="help-circle" size="48" style="color: var(--primary)"></i>
-            <h3>Deseja hospedar?</h3>
-            <p id="fileNameDisplay" style="font-size: 14px; color: #94a3b8; margin: 10px 0"></p>
-            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px">
-                <button id="uploadBtn" class="btn-main" style="margin:0" onclick="confirmUpload()">Hospedar</button>
-                <button class="btn-main" style="background: #ef4444; margin:0" onclick="closeModal()">Sair</button>
+            <h3>Confirmar Upload?</h3>
+            <p id="fileNameDisplay" style="color: #94a3b8"></p>
+            <div style="display: flex; gap: 10px; margin-top: 20px">
+                <button id="uploadBtn" class="btn-main" onclick="confirmUpload()">Sim</button>
+                <button class="btn-main" style="background: #ef4444" onclick="closeModal()">Não</button>
             </div>
         </div>
     </div>
 
     <div id="fullscreenView" class="fullscreen-view">
-        <div id="fullContent" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;"></div>
-        <button onclick="closeFullscreen()" style="position:fixed; top:20px; right:20px; background:rgba(255,255,255,0.2); border:none; color:white; padding:15px; border-radius:50%; cursor:pointer;">
-            <i data-lucide="x"></i>
-        </button>
-    </div>
+        <div id="fullContent" style="width:100%; height:100%;"></div>
+        </div>
 
     <script>
         lucide.createIcons();
 
-        // Configurações do Supabase
         const supabaseUrl = 'https://mgrvyboskvvlcvqclufh.supabase.co';
         const supabaseKey = 'sb_publishable_HsVRJqKhYoCCVTnPTvgp9w_okpI3WE0';
         const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
@@ -247,19 +250,12 @@
 
         function switchTab(tab) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            
             if(tab === 'home') {
                 document.getElementById('tab-home').classList.remove('hidden');
-                document.getElementById('nav-home').classList.add('active');
-                document.getElementById('step1').classList.remove('hidden');
-                document.getElementById('step3').classList.add('hidden');
             } else {
                 document.getElementById('tab-my').classList.remove('hidden');
-                document.getElementById('nav-my').classList.add('active');
                 renderGallery();
             }
-            if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar();
         }
 
         document.getElementById('fileInput').addEventListener('change', function(e) {
@@ -273,139 +269,82 @@
 
         function closeModal() { document.getElementById('confirmModal').style.display = 'none'; }
 
-        // --- SISTEMA DE SALVAMENTO SUPABASE ---
         async function confirmUpload() {
             const btn = document.getElementById('uploadBtn');
-            btn.disabled = true;
-            btn.innerText = "Hospedando...";
-
+            btn.disabled = true; btn.innerText = "Processando...";
             try {
                 const fileId = Math.random().toString(36).substring(2, 10);
-                const fileExt = selectedFile.name.split('.').pop();
-                const fileName = `${fileId}.${fileExt}`;
+                const fileName = `${fileId}.${selectedFile.name.split('.').pop()}`;
                 const mediaType = selectedFile.type.startsWith('image/') ? 'image' : 'video';
 
                 const { data: storageData, error: storageError } = await _supabase.storage
-                    .from('midias')
-                    .upload(fileName, selectedFile);
-
+                    .from('midias').upload(fileName, selectedFile);
                 if (storageError) throw storageError;
 
-                const { data: { publicUrl } } = _supabase.storage
-                    .from('midias')
-                    .getPublicUrl(fileName);
+                const { data: { publicUrl } } = _supabase.storage.from('midias').getPublicUrl(fileName);
 
-                const { error: dbError } = await _supabase
-                    .from('datar')
-                    .insert([{ 
-                        id: fileId, 
-                        media_url: publicUrl, 
-                        media_type: mediaType 
-                    }]);
+                await _supabase.from('datar').insert([{ id: fileId, media_url: publicUrl, media_type: mediaType }]);
 
-                if (dbError) throw dbError;
-
-                const newUpload = {
-                    id: fileId,
-                    data: publicUrl,
-                    type: mediaType,
-                    name: selectedFile.name
-                };
-
+                const newUpload = { id: fileId, data: publicUrl, type: mediaType };
                 myUploads.push(newUpload);
                 localStorage.setItem('flashhost_uploads', JSON.stringify(myUploads));
                 
                 closeModal();
                 showResult(newUpload);
-
             } catch (error) {
-                console.error(error);
-                alert("Erro ao hospedar: " + error.message);
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Hospedar";
+                alert("Erro: " + error.message);
             }
         }
 
         function showResult(file) {
             document.getElementById('step1').classList.add('hidden');
             document.getElementById('step3').classList.remove('hidden');
-            
-            const container = document.getElementById('mediaPreviewContainer');
-            container.innerHTML = file.type === 'image' 
-                ? `<img src="${file.data}" class="preview-img" style="width:100%; border-radius:15px">`
-                : `<video src="${file.data}" class="preview-img" controls style="width:100%; border-radius:15px"></video>`;
-
-            // --- GERAÇÃO DO LINK ÚNICO ---
-            // Pega o domínio atual (ex: https://seusite.com) e adiciona o ID
-            const baseUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
-            document.getElementById('generatedLink').value = `${baseUrl}?id=${file.id}`;
+            const finalLink = `${window.location.protocol}//${window.location.host}${window.location.pathname}?id=${file.id}`;
+            document.getElementById('generatedLink').value = finalLink;
         }
 
         function renderGallery() {
             const grid = document.getElementById('galleryGrid');
-            grid.innerHTML = '';
+            grid.innerHTML = myUploads.map(file => `
+                <div class="gallery-item" onclick="window.open('?id=${file.id}', '_blank')">
+                    <${file.type === 'image' ? 'img' : 'video'} src="${file.data}">
+                </div>
+            `).join('');
+        }
+
+        // FUNÇÃO DE TELA CHEIA IMERSIVA
+        function openImmersive(file) {
+            // Esconde toda a interface do site
+            document.getElementById('ui-controls').classList.add('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
             
-            if(myUploads.length === 0) {
-                grid.innerHTML = '<p style="grid-column: 1/-1; opacity: 0.5">Nenhum arquivo hospedado ainda.</p>';
-                return;
-            }
-
-            myUploads.forEach(file => {
-                const item = document.createElement('div');
-                item.className = 'gallery-item';
-                item.onclick = () => openFullscreen(file);
-                
-                if(file.type === 'image') {
-                    item.innerHTML = `<img src="${file.data}">`;
-                } else {
-                    item.innerHTML = `<video src="${file.data}"></video><div style="position:absolute; top:5px; right:5px; background: rgba(0,0,0,0.5); padding: 2px; border-radius: 4px"><i data-lucide="play" size="16"></i></div>`;
-                }
-                grid.appendChild(item);
-            });
-            lucide.createIcons();
-        }
-
-        function openFullscreen(file) {
+            const view = document.getElementById('fullscreenView');
             const content = document.getElementById('fullContent');
-            content.innerHTML = file.type === 'image' || file.media_type === 'image'
-                ? `<img src="${file.data || file.media_url}" style="max-width:90%; max-height:90%; object-fit: contain">`
-                : `<video src="${file.data || file.media_url}" controls autoplay style="max-width:90%; max-height:90%"></video>`;
-            document.getElementById('fullscreenView').style.display = 'block';
+            
+            content.innerHTML = file.type === 'image'
+                ? `<img src="${file.media_url}">`
+                : `<video src="${file.media_url}" autoplay loop playsinline controls></video>`;
+            
+            view.style.display = 'block';
+            document.body.style.overflow = 'hidden';
         }
 
-        function closeFullscreen() { 
-            document.getElementById('fullscreenView').style.display = 'none';
-            document.getElementById('fullContent').innerHTML = ''; 
-            // Ao fechar a visualização externa, limpa o ID da URL sem recarregar a página
-            window.history.pushState({}, document.title, window.location.pathname);
-        }
-        
-        function copyLink() {
-            const copyText = document.getElementById("generatedLink");
-            copyText.select();
-            document.execCommand("copy");
-            alert("Link copiado!");
-        }
-
-        // --- SISTEMA DE VISUALIZAÇÃO POR ID ---
         window.onload = async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const id = urlParams.get('id');
             if (id) {
-                // Busca no Supabase os dados da imagem pelo ID da URL
-                const { data, error } = await _supabase
-                    .from('datar')
-                    .select('*')
-                    .eq('id', id)
-                    .single();
-
+                const { data, error } = await _supabase.from('datar').select('*').eq('id', id).single();
                 if (data && !error) {
-                    openFullscreen(data);
-                } else {
-                    console.error("Arquivo não encontrado ou erro no banco.");
+                    openImmersive(data);
                 }
             }
+        }
+
+        function copyLink() {
+            const copyText = document.getElementById("generatedLink");
+            copyText.select();
+            document.execCommand("copy");
+            alert("Link Único Copiado!");
         }
     </script>
 </body>
