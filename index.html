@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Bola Clicker Tycoon 2.0 - Ultimate Edition</title>
+    <title>Super Bola Clicker Tycoon 2.0 - Mega Shop Edition</title>
     <style>
         :root {
             --bg-color: #1a1a2e;
@@ -31,23 +31,24 @@
         .progress-text { position: absolute; width: 100%; text-align: center; line-height: 30px; top: 0; font-weight: bold; }
 
         /* --- GAME AREA --- */
-        #game-area { width: 65%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; background: radial-gradient(circle at center, #252a40 0%, #1a1a2e 100%); }
+        #game-area { width: 60%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; background: radial-gradient(circle at center, #252a40 0%, #1a1a2e 100%); }
         #score-container { font-size: 3.5rem; font-weight: bold; text-shadow: 0 0 15px var(--text-color); }
         #the-ball { width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #ff7675, #d63031); box-shadow: inset -20px -20px 60px rgba(0,0,0,0.5), 0 0 30px rgba(231, 76, 60, 0.6); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.05s; }
         #the-ball::after { content: '★'; font-size: 80px; color: rgba(255,255,255,0.3); }
         #the-ball:active { transform: scale(0.92); }
 
         /* --- SHOP AREA --- */
-        #shop-area { width: 35%; height: 100%; background-color: var(--panel-color); border-left: 4px solid var(--accent-color); display: flex; flex-direction: column; }
+        #shop-area { width: 40%; height: 100%; background-color: var(--panel-color); border-left: 4px solid var(--accent-color); display: flex; flex-direction: column; }
         #shop-header { padding: 20px; background-color: var(--accent-color); text-align: center; font-size: 1.5rem; font-weight: bold; }
         #shop-list { flex: 1; overflow-y: auto; padding: 10px; }
-        .shop-item { display: flex; align-items: center; background: rgba(255,255,255,0.05); margin-bottom: 8px; padding: 12px; border-radius: 8px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); }
-        .shop-item.locked { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; }
-        .shop-item.unlocked { border-color: var(--text-color); background: rgba(233, 69, 96, 0.1); }
-        .shop-icon { font-size: 1.8rem; margin-right: 12px; }
+        .shop-item { display: flex; align-items: center; background: rgba(255,255,255,0.05); margin-bottom: 8px; padding: 12px; border-radius: 8px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: 0.2s; }
+        .shop-item.locked { opacity: 0.3; filter: grayscale(1); cursor: not-allowed; }
+        .shop-item.unlocked:hover { background: rgba(233, 69, 96, 0.15); transform: translateX(-5px); }
+        .shop-icon { font-size: 2rem; margin-right: 15px; }
         .shop-info { flex: 1; }
-        .shop-name { font-weight: bold; display: block; }
-        .shop-cost { color: var(--green); font-size: 0.9rem; font-weight: bold; }
+        .shop-name { font-weight: bold; display: block; font-size: 1.1rem; }
+        .shop-cost { color: var(--green); font-size: 0.95rem; font-weight: bold; }
+        .shop-desc { font-size: 0.8rem; color: #aaa; }
 
         /* --- FLOATING & EVENTS --- */
         .floating-text { position: absolute; font-weight: bold; font-size: 1.8rem; color: white; pointer-events: none; z-index: 1000; text-shadow: 1px 1px 5px black; animation: floatUp 1.2s forwards; }
@@ -57,7 +58,7 @@
         .mini-gold-ball { position: absolute; width: 45px; height: 45px; background: radial-gradient(circle, #ffd700, #b8860b); border-radius: 50%; cursor: pointer; z-index: 150; box-shadow: 0 0 15px #f1c40f; }
 
         /* --- RELÓGIO ARRASTÁVEL --- */
-        #drag-clock { position: absolute; top: 20px; right: 37%; width: 180px; background: rgba(15, 52, 96, 0.9); border: 2px solid var(--text-color); border-radius: 10px; z-index: 300; cursor: move; padding: 5px; text-align: center; }
+        #drag-clock { position: absolute; top: 20px; right: 42%; width: 180px; background: rgba(15, 52, 96, 0.9); border: 2px solid var(--text-color); border-radius: 10px; z-index: 300; cursor: move; padding: 5px; text-align: center; }
         #clock-time { font-size: 1.4rem; font-weight: bold; color: var(--white); display: block; }
         #clock-label { font-size: 0.6rem; color: var(--text-color); font-weight: bold; }
     </style>
@@ -95,7 +96,7 @@
     </div>
 
     <div id="shop-area">
-        <div id="shop-header">Mercado da Bola</div>
+        <div id="shop-header">Mercado da Bola Premium</div>
         <div id="shop-list"></div>
     </div>
 
@@ -111,33 +112,51 @@
             nextRebirth: 1000000
         };
 
+        // LISTA EXPANDIDA COM 45 ITENS ÚNICOS
         const upgrades = [
+            // EARLY GAME (CLIQUES E AUTO)
             { name: "Dedo Extra", baseCost: 15, bonus: 1, type: "auto", icon: "👆" },
             { name: "Mouse Gamer", baseCost: 100, bonus: 5, type: "auto", icon: "🖱️" },
-            { name: "Jogador Amador", baseCost: 500, bonus: 20, type: "click", icon: "⚽" },
-            { name: "Treinador", baseCost: 1500, bonus: 50, type: "auto", icon: "📣" },
-            { name: "Máquina de Chutes", baseCost: 5000, bonus: 150, type: "auto", icon: "⚙️" },
-            { name: "Estádio Local", baseCost: 20000, bonus: 500, type: "auto", icon: "🏟️" },
-            { name: "Patrocínio de TV", baseCost: 100000, bonus: 1500, type: "click", icon: "📺" },
-            { name: "Clonagem de Bolas", baseCost: 500000, bonus: 5000, type: "auto", icon: "🧬" },
-            { name: "Robô Jogador", baseCost: 2000000, bonus: 15000, type: "auto", icon: "🤖" },
-            { name: "Fábrica de Bolas", baseCost: 10000000, bonus: 50000, type: "auto", icon: "🏭" },
-            { name: "Satélite Esportivo", baseCost: 50000000, bonus: 200000, type: "click", icon: "🛰️" },
-            { name: "Base na Lua", baseCost: 200000000, bonus: 1000000, type: "auto", icon: "🌑" },
-            { name: "Portal Dimensional", baseCost: 1000000000, bonus: 5000000, type: "auto", icon: "🌀" }
-        ];
+            { name: "Jogador Amador", baseCost: 500, bonus: 15, type: "click", icon: "⚽" },
+            { name: "Chuteira de Couro", baseCost: 1200, bonus: 25, type: "auto", icon: "👟" },
+            { name: "Treinador de Bairro", baseCost: 3500, bonus: 60, type: "auto", icon: "📣" },
+            { name: "Energético", baseCost: 8000, bonus: 40, type: "click", icon: "⚡" },
+            { name: "Campo de Várzea", baseCost: 15000, bonus: 150, type: "auto", icon: "🌱" },
+            { name: "Torcida Organizada", baseCost: 40000, bonus: 350, type: "auto", icon: "🥁" },
+            { name: "Empresário", baseCost: 100000, bonus: 800, type: "auto", icon: "💼" },
+            { name: "Patrocínio Local", baseCost: 250000, bonus: 500, type: "click", icon: "📺" },
+            
+            // MID GAME (ESTÁDIOS E TECNOLOGIA)
+            { name: "Centro de Treinamento", baseCost: 750000, bonus: 2500, type: "auto", icon: "🏢" },
+            { name: "Bola de Ouro", baseCost: 2000000, bonus: 6000, type: "auto", icon: "🟡" },
+            { name: "Estádio Municipal", baseCost: 5000000, bonus: 15000, type: "auto", icon: "🏟️" },
+            { name: "Fisioterapia Tech", baseCost: 12000000, bonus: 35000, type: "auto", icon: "🧬" },
+            { name: "Venda de Ingressos", baseCost: 30000000, bonus: 10000, type: "click", icon: "🎫" },
+            { name: "Direitos de Transmissão", baseCost: 80000000, bonus: 100000, type: "auto", icon: "📡" },
+            { name: "Clube Europeu", baseCost: 200000000, bonus: 250000, type: "auto", icon: "🌍" },
+            { name: "Copa do Mundo", baseCost: 500000000, bonus: 600000, type: "auto", icon: "🏆" },
+            { name: "Doping Digital", baseCost: 1200000000, bonus: 1500000, type: "auto", icon: "💊" },
+            { name: "Ícone Lendário", baseCost: 3000000000, bonus: 500000, type: "click", icon: "🤴" },
 
-        // Gerar Singularidades (O "Mercado Infinito" que você pediu de volta)
-        const sufixos = ["Alpha", "Beta", "Gamma", "Omega", "Zetta", "Exa", "Divino", "Eterno"];
-        let lastC = 5000000000;
-        let lastB = 20000000;
-        for(let i=0; i<30; i++) {
-            lastC *= 5; lastB *= 4;
-            upgrades.push({
-                name: `Singularidade ${sufixos[i%sufixos.length]} V${Math.floor(i/8)+1}`,
-                baseCost: lastC, bonus: lastB, type: i%3==0?"click":"auto", icon: "⚛️"
-            });
-        }
+            // LATE GAME (CIÊNCIA E ESPAÇO)
+            { name: "Nanorrobôs Chutadores", baseCost: 10000000000, bonus: 8000000, type: "auto", icon: "🤖" },
+            { name: "Fábrica de Clones Pelé", baseCost: 35000000000, bonus: 25000000, type: "auto", icon: "👥" },
+            { name: "Estádio Orbital", baseCost: 100000000000, bonus: 70000000, type: "auto", icon: "🚀" },
+            { name: "Gravidade Zero", baseCost: 400000000000, bonus: 200000000, type: "auto", icon: "🛸" },
+            { name: "Futebol na Lua", baseCost: 1000000000000, bonus: 500000000, type: "auto", icon: "🌑" },
+            { name: "IA Treinadora Perfeita", baseCost: 5000000000000, bonus: 2000000000, type: "auto", icon: "🧠" },
+            { name: "Buraco Negro Compacto", baseCost: 20000000000000, bonus: 8000000000, type: "auto", icon: "🕳️" },
+            { name: "Portal Intergaláctico", baseCost: 100000000000000, bonus: 30000000000, type: "auto", icon: "🌀" },
+            { name: "Manipulador Quântico", baseCost: 500000000000000, bonus: 100000000000, type: "auto", icon: "⚛️" },
+            { name: "Deus da Bola", baseCost: 2500000000000000, bonus: 50000000000, type: "click", icon: "🌟" },
+
+            // END GAME (SINGULARIDADES)
+            { name: "Futebol Quadridimensional", baseCost: 10000000000000000, bonus: 1000000000000, type: "auto", icon: "🟦" },
+            { name: "Realidade Simulada", baseCost: 75000000000000000, bonus: 5000000000000, type: "auto", icon: "💻" },
+            { name: "Nascimento de Galáxias", baseCost: 400000000000000000, bonus: 20000000000000, type: "auto", icon: "🌌" },
+            { name: "Multiverso da Bola", baseCost: 2000000000000000000, bonus: 100000000000000, type: "auto", icon: "🌈" },
+            { name: "Eternidade Esportiva", baseCost: 10000000000000000000, bonus: 500000000000000, type: "auto", icon: "♾️" }
+        ];
 
         upgrades.forEach(u => { u.count = 0; u.cost = u.baseCost; });
 
@@ -149,7 +168,7 @@
             const gain = audioCtx.createGain();
             osc.type = type;
             osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + duration);
@@ -169,10 +188,12 @@
 
         // --- LÓGICA DO JOGO ---
         function format(n) {
-            if(n >= 1e12) return (n/1e12).toFixed(2) + "T";
-            if(n >= 1e9) return (n/1e9).toFixed(2) + "B";
-            if(n >= 1e6) return (n/1e6).toFixed(2) + "M";
-            return Math.floor(n).toLocaleString();
+            if (n >= 1e18) return (n/1e18).toFixed(2) + "Qi";
+            if (n >= 1e15) return (n/1e15).toFixed(2) + "Qa";
+            if (n >= 1e12) return (n/1e12).toFixed(2) + "T";
+            if (n >= 1e9) return (n/1e9).toFixed(2) + "B";
+            if (n >= 1e6) return (n/1e6).toFixed(2) + "M";
+            return Math.floor(n).toLocaleString('pt-BR');
         }
 
         function updateUI() {
@@ -184,7 +205,13 @@
             upgrades.forEach((u, i) => {
                 const el = document.getElementById(`u-${i}`);
                 if(el) {
-                    el.className = `shop-item ${game.score >= u.cost ? 'unlocked' : 'locked'}`;
+                    if(game.score >= u.cost) {
+                        el.classList.remove('locked');
+                        el.classList.add('unlocked');
+                    } else {
+                        el.classList.add('locked');
+                        el.classList.remove('unlocked');
+                    }
                     el.querySelector('.shop-cost').innerText = `$ ${format(u.cost)}`;
                     el.querySelector('.count').innerText = u.count;
                 }
@@ -195,7 +222,7 @@
             const div = document.createElement('div');
             div.className = 'floating-text';
             div.innerText = txt;
-            div.style.left = (x || Math.random()*window.innerWidth*0.6) + 'px';
+            div.style.left = (x || Math.random()*window.innerWidth*0.4) + 'px';
             div.style.top = (y || Math.random()*window.innerHeight) + 'px';
             document.body.appendChild(div);
             setTimeout(() => div.remove(), 1200);
@@ -204,7 +231,7 @@
         document.getElementById('the-ball').onclick = (e) => {
             let gain = game.clickVal * game.rebirthMult * game.eventMult;
             game.score += gain;
-            playSfx(400, 'sine', 0.1);
+            playSfx(440, 'sine', 0.1);
             spawnText(`+$${format(gain)}`, e.clientX, e.clientY);
             updateUI();
         };
@@ -216,30 +243,30 @@
                 u.count++;
                 if(u.type === "click") game.clickVal += u.bonus;
                 else game.autoVal += u.bonus;
-                u.cost = Math.ceil(u.cost * 1.5);
-                playSfx(600, 'square', 0.2);
+                u.cost = Math.ceil(u.cost * 1.45); // Preço sobe 45% a cada compra
+                playSfx(523, 'square', 0.1);
                 updateUI();
             }
         }
 
-        // --- EVENTOS ADICIONAIS ---
+        // --- EVENTOS ---
         function triggerEvent() {
             const events = [
-                { name: "TEMPO É DINHEIRO! (x2)", action: () => { game.eventMult = 2; setTimeout(() => game.eventMult = 1, 15000); } },
-                { name: "CHUVA DE OURO!", action: () => { 
+                { name: "HORA DO SHOW! (Ganhos x2)", action: () => { game.eventMult = 2; setTimeout(() => game.eventMult = 1, 15000); } },
+                { name: "CHUVA DE PATROCÍNIO!", action: () => { 
                     let interval = setInterval(() => {
                         const b = document.createElement('div');
                         b.className = 'mini-gold-ball';
-                        b.style.left = Math.random()*60+'%'; b.style.top = Math.random()*80+'%';
-                        b.onclick = () => { game.score += (game.nextRebirth/100); b.remove(); playSfx(800, 'triangle', 0.3); };
+                        b.style.left = Math.random()*50+'%'; b.style.top = Math.random()*80+'%';
+                        b.onclick = () => { game.score += (game.nextRebirth/200); b.remove(); playSfx(880, 'triangle', 0.2); };
                         document.getElementById('game-area').appendChild(b);
-                        setTimeout(() => b.remove(), 2000);
-                    }, 500);
+                        setTimeout(() => b.remove(), 2500);
+                    }, 600);
                     setTimeout(() => clearInterval(interval), 10000);
                 }},
-                { name: "CHUTE EXPLOSIVO! (x5 Click)", action: () => {
-                    let old = game.clickVal; game.clickVal *= 5;
-                    setTimeout(() => game.clickVal = old, 10000);
+                { name: "CHUTE FOGUETE! (Cliques x10)", action: () => {
+                    let old = game.clickVal; game.clickVal *= 10;
+                    setTimeout(() => game.clickVal = old, 8000);
                 }}
             ];
             const ev = events[Math.floor(Math.random()*events.length)];
@@ -248,7 +275,7 @@
             ev.action();
             setTimeout(() => banner.style.display = 'none', 10000);
         }
-        setInterval(() => { if(Math.random() > 0.7) triggerEvent(); }, 30000);
+        setInterval(() => { if(Math.random() > 0.75) triggerEvent(); }, 35000);
 
         // --- REBIRTH ---
         document.getElementById('rebirth-trigger').onclick = () => {
@@ -262,10 +289,10 @@
         document.getElementById('do-rebirth-btn').onclick = () => {
             game.score = 0; game.clickVal = 1; game.autoVal = 0;
             game.rebirths++; game.rebirthMult *= 4;
-            game.nextRebirth *= 15;
+            game.nextRebirth *= 20;
             upgrades.forEach(u => { u.count = 0; u.cost = u.baseCost; });
             document.getElementById('rebirth-modal').style.display = 'none';
-            playSfx(100, 'sawtooth', 1);
+            playSfx(150, 'sawtooth', 0.8);
             updateUI();
         };
 
@@ -288,7 +315,7 @@
                         <span class="shop-desc">+${format(u.bonus)} ${u.type=='click'?'click':'/s'}</span>
                         <span class="shop-cost">$ ${format(u.cost)}</span>
                     </div>
-                    <div style="font-weight:bold">x<span class="count">0</span></div>
+                    <div style="font-weight:bold; font-size: 1.2rem; color: var(--text-color)">x<span class="count">0</span></div>
                 </div>`;
         });
         updateUI();
