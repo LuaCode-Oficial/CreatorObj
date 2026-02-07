@@ -323,3 +323,137 @@
     </script>
 </body>
 </html>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+    /* Estilos da Interface de Login */
+    #auth-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: radial-gradient(circle, #1a1a2e 0%, #0f0f1a 100%);
+        z-index: 10000; display: flex; align-items: center; justify-content: center;
+        transition: opacity 0.8s ease, visibility 0.8s;
+    }
+    .auth-card {
+        background: #16213e; width: 380px; padding: 30px; border-radius: 20px;
+        border: 2px solid #e94560; box-shadow: 0 0 30px rgba(233, 69, 96, 0.3);
+        text-align: center; color: white; position: relative;
+        animation: cardAppear 0.5s ease-out;
+    }
+    @keyframes cardAppear { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .auth-card h2 { margin-bottom: 20px; color: #e94560; font-size: 1.8rem; }
+    .auth-input {
+        width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px;
+        border: 1px solid #0f3460; background: #0f3460; color: white; outline: none;
+    }
+    .auth-btn {
+        width: 100%; padding: 12px; margin-top: 15px; border-radius: 8px;
+        border: none; background: #e94560; color: white; font-weight: bold;
+        cursor: pointer; transition: 0.3s;
+    }
+    .auth-btn:hover { background: #ff4d6d; transform: translateY(-2px); }
+    .google-btn-container { margin: 20px 0; display: flex; justify-content: center; }
+    .switch-mode { margin-top: 20px; font-size: 0.85rem; color: #aaa; cursor: pointer; }
+    .switch-mode b { color: #e94560; }
+    #pfp-preview {
+        width: 80px; height: 80px; border-radius: 50%; background: #0f3460;
+        margin: 0 auto 10px; display: none; object-fit: cover; border: 2px solid #e94560;
+    }
+    .hidden { display: none !important; }
+</style>
+
+<div id="auth-overlay">
+    <div class="auth-card" id="auth-card">
+        <h2 id="auth-title">Entrar no Jogo</h2>
+        
+        <img id="pfp-preview" src="" alt="Avatar">
+        
+        <div id="register-fields" class="hidden">
+            <input type="text" id="user-name" class="auth-input" placeholder="Seu Nome Completo">
+            <p style="font-size: 0.7rem; color: #aaa; margin: 0;">Foto de Perfil:</p>
+            <input type="file" id="user-pfp" class="auth-input" accept="image/*" onchange="previewImage(event)">
+        </div>
+
+        <input type="email" id="user-email" class="auth-input" placeholder="E-mail">
+        <input type="password" id="user-pass" class="auth-input" placeholder="Senha">
+        
+        <button class="auth-btn" id="main-auth-btn" onclick="finishAuth()">ENTRAR AGORA</button>
+
+        <div class="google-btn-container">
+            <div id="g_id_onload"
+                data-client_id="41450846148-uvb6b1qnkdmg8avgf3bl70t6d0ktcpu3.apps.googleusercontent.com"
+                data-callback="handleGoogleLogin">
+            </div>
+            <div class="g_id_signin" data-type="standard"></div>
+        </div>
+
+        <div class="switch-mode" id="toggle-auth" onclick="toggleAuthMode()">
+            Não tem uma conta? <b>Crie uma aqui!</b>
+        </div>
+    </div>
+</div>
+
+<script>
+    let isRegisterMode = false;
+
+    function toggleAuthMode() {
+        isRegisterMode = !isRegisterMode;
+        const title = document.getElementById('auth-title');
+        const regFields = document.getElementById('register-fields');
+        const btn = document.getElementById('main-auth-btn');
+        const toggleText = document.getElementById('toggle-auth');
+        const pfp = document.getElementById('pfp-preview');
+
+        if (isRegisterMode) {
+            title.innerText = "Criar Conta";
+            regFields.classList.remove('hidden');
+            btn.innerText = "CRIAR MINHA CONTA";
+            toggleText.innerHTML = "Já tem conta? <b>Faça Login!</b>";
+        } else {
+            title.innerText = "Entrar no Jogo";
+            regFields.classList.add('hidden');
+            pfp.style.display = 'none';
+            btn.innerText = "ENTRAR AGORA";
+            toggleText.innerHTML = "Não tem uma conta? <b>Crie uma aqui!</b>";
+        }
+    }
+
+    function previewImage(event) {
+        const reader = new FileReader();
+        reader.onload = function() {
+            const output = document.getElementById('pfp-preview');
+            output.src = reader.result;
+            output.style.display = 'block';
+        };
+        reader.readAsDataURL(event.target.files[0]);
+    }
+
+    // Função para sumir a tela e começar o jogo
+    function enterGame() {
+        const overlay = document.getElementById('auth-overlay');
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+            // Aqui você pode iniciar sons ou timers do seu jogo original se precisar
+            if(typeof playSound === 'function') playSound('buy'); 
+        }, 800);
+    }
+
+    // Login Real com Google
+    function handleGoogleLogin(response) {
+        console.log("Token do Google recebido:", response.credential);
+        // Em um sistema real, você enviaria o token para validação aqui
+        enterGame();
+    }
+
+    // Botão de Criar/Logar manual
+    function finishAuth() {
+        const email = document.getElementById('user-email').value;
+        const pass = document.getElementById('user-pass').value;
+
+        if(email && pass) {
+            enterGame();
+        } else {
+            alert("Por favor, preencha os campos!");
+        }
+    }
+</script>
