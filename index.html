@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Bola Clicker Tycoon 2.0 - Ultimate</title>
+    <title>Super Bola Clicker Tycoon 2.0 - Ultimate Edition</title>
     <style>
         :root {
             --bg-color: #1a1a2e;
@@ -13,328 +13,286 @@
             --white: #ffffff;
             --green: #2ecc71;
             --gold: #f1c40f;
-            --blue-neon: #00d2ff;
         }
 
         * { box-sizing: border-box; user-select: none; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; padding: 0; height: 100vh; background-color: var(--bg-color); color: var(--white); overflow: hidden; display: flex; }
 
-        body {
-            margin: 0; padding: 0; height: 100vh;
-            background-color: var(--bg-color); color: var(--white);
-            overflow: hidden; display: flex;
-        }
-
-        /* --- INTERFACE DE RELÓGIO ARRASTÁVEL --- */
-        #draggable-clock {
-            position: absolute; top: 10px; right: 40%;
-            width: 180px; background: rgba(15, 52, 96, 0.9);
-            border: 2px solid var(--text-color); border-radius: 10px;
-            z-index: 1000; cursor: move; padding: 5px; text-align: center;
-        }
-        #clock-time { font-size: 1.4rem; font-weight: bold; color: var(--white); }
-        #clock-date { font-size: 0.7rem; color: var(--blue-neon); }
-
-        /* --- REBIRTH E STATUS --- */
+        /* --- UI COMPONENTES --- */
         #rebirth-btn-container { position: absolute; top: 20px; left: 20px; z-index: 50; }
-        #rebirth-trigger {
-            background: linear-gradient(45deg, #e67e22, #d35400);
-            border: 2px solid #fff; color: white; padding: 10px 20px;
-            font-weight: bold; border-radius: 10px; cursor: pointer;
-            transition: transform 0.2s;
-        }
+        #rebirth-trigger { background: linear-gradient(45deg, #e67e22, #d35400); border: 2px solid #fff; color: white; padding: 10px 20px; font-weight: bold; border-radius: 10px; cursor: pointer; transition: transform 0.2s; }
+        #rebirth-trigger:hover { transform: scale(1.1); }
 
-        #rebirth-modal {
-            display: none; position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%; background: rgba(0,0,0,0.85);
-            z-index: 2000; justify-content: center; align-items: center;
-        }
-        .modal-content {
-            background: var(--panel-color); padding: 40px; border-radius: 20px;
-            border: 4px solid var(--text-color); text-align: center; width: 450px;
-        }
+        #rebirth-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 200; justify-content: center; align-items: center; flex-direction: column; }
+        .modal-content { background: var(--panel-color); padding: 40px; border-radius: 20px; border: 4px solid var(--text-color); text-align: center; width: 500px; position: relative; }
 
-        /* --- ÁREA DO JOGO --- */
-        #game-area {
-            width: 65%; height: 100%; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; position: relative;
-            background: radial-gradient(circle at center, #252a40 0%, #1a1a2e 100%);
-        }
+        .progress-container { width: 100%; background-color: #333; border-radius: 15px; height: 30px; margin: 20px 0; position: relative; overflow: hidden; }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, #e94560, #ff7675); width: 0%; transition: width 0.3s; }
+        .progress-text { position: absolute; width: 100%; text-align: center; line-height: 30px; top: 0; font-weight: bold; }
 
+        /* --- GAME AREA --- */
+        #game-area { width: 65%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; background: radial-gradient(circle at center, #252a40 0%, #1a1a2e 100%); }
         #score-container { font-size: 3.5rem; font-weight: bold; text-shadow: 0 0 15px var(--text-color); }
-        #sps-display { font-size: 1.2rem; color: #aaa; margin-bottom: 30px; }
-
-        #the-ball {
-            width: 260px; height: 260px; border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, #ff7675, #d63031);
-            box-shadow: inset -20px -20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(231, 76, 60, 0.4);
-            cursor: pointer; transition: transform 0.05s ease;
-            display: flex; align-items: center; justify-content: center;
-        }
+        #the-ball { width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #ff7675, #d63031); box-shadow: inset -20px -20px 60px rgba(0,0,0,0.5), 0 0 30px rgba(231, 76, 60, 0.6); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.05s; }
+        #the-ball::after { content: '★'; font-size: 80px; color: rgba(255,255,255,0.3); }
         #the-ball:active { transform: scale(0.92); }
-        #the-ball::after { content: '★'; font-size: 80px; color: rgba(255,255,255,0.2); }
 
-        /* --- SHOP --- */
-        #shop-area {
-            width: 35%; height: 100%; background-color: var(--panel-color);
-            border-left: 4px solid var(--accent-color); display: flex; flex-direction: column;
-        }
-        #shop-header { padding: 20px; background: var(--accent-color); text-align: center; font-size: 1.5rem; font-weight: bold; }
-        #shop-list { flex: 1; overflow-y: auto; padding: 15px; }
-
-        .shop-item {
-            display: flex; align-items: center; background: rgba(255,255,255,0.05);
-            margin-bottom: 12px; padding: 12px; border-radius: 10px; cursor: pointer;
-            border: 1px solid rgba(255,255,255,0.1); transition: 0.2s;
-        }
-        .shop-item:hover { transform: translateX(-5px); background: rgba(255,255,255,0.1); }
-        .shop-item.locked { opacity: 0.4; cursor: not-allowed; filter: grayscale(100%); }
-        .shop-item.unlocked { border-color: var(--green); }
-        .shop-icon { font-size: 2rem; margin-right: 15px; }
+        /* --- SHOP AREA --- */
+        #shop-area { width: 35%; height: 100%; background-color: var(--panel-color); border-left: 4px solid var(--accent-color); display: flex; flex-direction: column; }
+        #shop-header { padding: 20px; background-color: var(--accent-color); text-align: center; font-size: 1.5rem; font-weight: bold; }
+        #shop-list { flex: 1; overflow-y: auto; padding: 10px; }
+        .shop-item { display: flex; align-items: center; background: rgba(255,255,255,0.05); margin-bottom: 8px; padding: 12px; border-radius: 8px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); }
+        .shop-item.locked { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; }
+        .shop-item.unlocked { border-color: var(--text-color); background: rgba(233, 69, 96, 0.1); }
+        .shop-icon { font-size: 1.8rem; margin-right: 12px; }
         .shop-info { flex: 1; }
         .shop-name { font-weight: bold; display: block; }
-        .shop-cost { color: var(--green); font-weight: bold; }
+        .shop-cost { color: var(--green); font-size: 0.9rem; font-weight: bold; }
 
-        /* --- EVENTOS --- */
-        #event-banner {
-            position: absolute; top: 80px; background: var(--gold);
-            color: black; padding: 10px 40px; border-radius: 30px;
-            font-weight: bold; display: none; z-index: 100;
-            box-shadow: 0 0 20px var(--gold); animation: pulse 1s infinite;
-        }
+        /* --- FLOATING & EVENTS --- */
+        .floating-text { position: absolute; font-weight: bold; font-size: 1.8rem; color: white; pointer-events: none; z-index: 1000; text-shadow: 1px 1px 5px black; animation: floatUp 1.2s forwards; }
+        @keyframes floatUp { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: translateY(-100px) scale(1.2); } }
+        #event-banner { position: absolute; top: 80px; background: var(--gold); color: #000; padding: 10px 20px; border-radius: 30px; font-weight: bold; display: none; z-index: 100; box-shadow: 0 0 20px var(--gold); animation: pulse 1s infinite; }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .mini-gold-ball { position: absolute; width: 45px; height: 45px; background: radial-gradient(circle, #ffd700, #b8860b); border-radius: 50%; cursor: pointer; z-index: 150; box-shadow: 0 0 15px #f1c40f; }
 
-        .floating-text {
-            position: absolute; pointer-events: none; font-weight: bold;
-            font-size: 2rem; color: white; text-shadow: 2px 2px 4px black;
-            animation: floatUp 1s ease-out forwards; z-index: 999;
-        }
-        @keyframes floatUp { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-100px); } }
+        /* --- RELÓGIO ARRASTÁVEL --- */
+        #drag-clock { position: absolute; top: 20px; right: 37%; width: 180px; background: rgba(15, 52, 96, 0.9); border: 2px solid var(--text-color); border-radius: 10px; z-index: 300; cursor: move; padding: 5px; text-align: center; }
+        #clock-time { font-size: 1.4rem; font-weight: bold; color: var(--white); display: block; }
+        #clock-label { font-size: 0.6rem; color: var(--text-color); font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div id="draggable-clock">
-        <div id="clock-time">00:00:00</div>
-        <div id="clock-date">FEV 07, 2026</div>
+    <div id="drag-clock">
+        <div id="clock-label">SISTEMA AO VIVO</div>
+        <span id="clock-time">00:00:00</span>
     </div>
 
     <div id="rebirth-btn-container">
-        <button id="rebirth-trigger" onclick="openRebirthModal()">⚡ RENASCIMENTO</button>
+        <button id="rebirth-trigger">⚡ RENASCIMENTO</button>
     </div>
 
     <div id="rebirth-modal">
         <div class="modal-content">
-            <h2>EVOLUÇÃO SUPREMA</h2>
-            <p>Reinicie o progresso por um bônus de <strong>4x Permanente</strong>.</p>
-            <div id="rebirth-info" style="margin: 20px 0; font-weight: bold; color: var(--gold);"></div>
-            <button id="do-rebirth-btn" onclick="executeRebirth()" style="padding: 15px 30px; background: var(--green); border: none; color: white; border-radius: 10px; cursor: pointer; display: none;">RENASCER AGORA!</button>
-            <button onclick="closeRebirthModal()" style="margin-top: 10px; background: none; border: none; color: #aaa; cursor: pointer;">Cancelar</button>
+            <h2>SALA DE EVOLUÇÃO</h2>
+            <div class="progress-container">
+                <div class="progress-bar" id="rebirth-progress-bar"></div>
+                <div class="progress-text" id="rebirth-progress-text">0 / 1M</div>
+            </div>
+            <p>Ao renascer, você ganha <strong>4x Multiplicador Global</strong> permanente!</p>
+            <button id="do-rebirth-btn" style="padding:15px; background:var(--green); color:white; border:none; border-radius:10px; cursor:pointer; display:none;">RENASCER AGORA!</button>
+            <button onclick="document.getElementById('rebirth-modal').style.display='none'" style="margin-top:10px; background:none; color:#aaa; border:none; cursor:pointer;">Voltar</button>
         </div>
     </div>
 
     <div id="game-area">
-        <div id="event-banner">EVENTO ATIVO!</div>
-        <div style="color: var(--gold); font-weight: bold;">Renascimentos: <span id="rebirth-count">0</span> (x<span id="rebirth-mult">1</span>)</div>
-        <div id="score-container">$<span id="score">0</span></div>
-        <div id="sps-display">Ganhos/Seg: <span id="sps">0</span></div>
+        <div id="event-banner">EVENTO!</div>
+        <div style="color:var(--gold); font-weight:bold;">Renascimentos: <span id="rebirth-count">0</span> (x<span id="rebirth-mult">1</span>)</div>
+        <div id="score-container">$ <span id="score">0</span></div>
+        <div id="sps-display">Ganho por seg: <span id="sps">0</span></div>
         <div id="the-ball"></div>
     </div>
 
     <div id="shop-area">
-        <div id="shop-header">MERCADO DA BOLA</div>
+        <div id="shop-header">Mercado da Bola</div>
         <div id="shop-list"></div>
     </div>
 
     <script>
-        // --- DADOS DO JOGO ---
+        // --- ESTADO DO JOGO ---
         let game = {
             score: 0,
             clickVal: 1,
             autoVal: 0,
             rebirths: 0,
-            rebMultiplier: 1,
-            eventMultiplier: 1,
-            clickMultiplier: 1
+            rebirthMult: 1,
+            eventMult: 1,
+            nextRebirth: 1000000
         };
 
-        let rebirthCost = 1000000;
-
-        // --- LISTA COMPLETA DE UPGRADES (ORIGINAL) ---
-        let upgrades = [
-            { name: "Dedo Extra", cost: 15, bonus: 1, type: "auto", icon: "👆", count: 0 },
-            { name: "Mouse Gamer", cost: 100, bonus: 5, type: "auto", icon: "🖱️", count: 0 },
-            { name: "Jogador Amador", cost: 500, bonus: 20, type: "click", icon: "⚽", count: 0 },
-            { name: "Treinador", cost: 1500, bonus: 50, type: "auto", icon: "📣", count: 0 },
-            { name: "Máquina de Chutes", cost: 5000, bonus: 150, type: "auto", icon: "⚙️", count: 0 },
-            { name: "Estádio Local", cost: 20000, bonus: 500, type: "auto", icon: "🏟️", count: 0 },
-            { name: "Patrocínio de TV", cost: 100000, bonus: 1500, type: "click", icon: "📺", count: 0 },
-            { name: "Clonagem de Bolas", cost: 500000, bonus: 5000, type: "auto", icon: "🧬", count: 0 },
-            { name: "Robô Jogador", cost: 2000000, bonus: 15000, type: "auto", icon: "🤖", count: 0 },
-            { name: "Fábrica de Bolas", cost: 10000000, bonus: 50000, type: "auto", icon: "🏭", count: 0 },
-            { name: "Satélite Esportivo", cost: 50000000, bonus: 200000, type: "click", icon: "🛰️", count: 0 },
-            { name: "Base na Lua", cost: 200000000, bonus: 1000000, type: "auto", icon: "🌑", count: 0 },
-            { name: "Singularidade Divina", cost: 5000000000, bonus: 10000000, type: "auto", icon: "✨", count: 0 }
+        const upgrades = [
+            { name: "Dedo Extra", baseCost: 15, bonus: 1, type: "auto", icon: "👆" },
+            { name: "Mouse Gamer", baseCost: 100, bonus: 5, type: "auto", icon: "🖱️" },
+            { name: "Jogador Amador", baseCost: 500, bonus: 20, type: "click", icon: "⚽" },
+            { name: "Treinador", baseCost: 1500, bonus: 50, type: "auto", icon: "📣" },
+            { name: "Máquina de Chutes", baseCost: 5000, bonus: 150, type: "auto", icon: "⚙️" },
+            { name: "Estádio Local", baseCost: 20000, bonus: 500, type: "auto", icon: "🏟️" },
+            { name: "Patrocínio de TV", baseCost: 100000, bonus: 1500, type: "click", icon: "📺" },
+            { name: "Clonagem de Bolas", baseCost: 500000, bonus: 5000, type: "auto", icon: "🧬" },
+            { name: "Robô Jogador", baseCost: 2000000, bonus: 15000, type: "auto", icon: "🤖" },
+            { name: "Fábrica de Bolas", baseCost: 10000000, bonus: 50000, type: "auto", icon: "🏭" },
+            { name: "Satélite Esportivo", baseCost: 50000000, bonus: 200000, type: "click", icon: "🛰️" },
+            { name: "Base na Lua", baseCost: 200000000, bonus: 1000000, type: "auto", icon: "🌑" },
+            { name: "Portal Dimensional", baseCost: 1000000000, bonus: 5000000, type: "auto", icon: "🌀" }
         ];
 
-        // --- RELÓGIO AO VIVO ---
+        // Gerar Singularidades (O "Mercado Infinito" que você pediu de volta)
+        const sufixos = ["Alpha", "Beta", "Gamma", "Omega", "Zetta", "Exa", "Divino", "Eterno"];
+        let lastC = 5000000000;
+        let lastB = 20000000;
+        for(let i=0; i<30; i++) {
+            lastC *= 5; lastB *= 4;
+            upgrades.push({
+                name: `Singularidade ${sufixos[i%sufixos.length]} V${Math.floor(i/8)+1}`,
+                baseCost: lastC, bonus: lastB, type: i%3==0?"click":"auto", icon: "⚛️"
+            });
+        }
+
+        upgrades.forEach(u => { u.count = 0; u.cost = u.baseCost; });
+
+        // --- SISTEMA DE ÁUDIO ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSfx(freq, type, duration) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        }
+
+        // --- RELÓGIO E DRAG ---
         function updateClock() {
-            const now = new Date();
-            document.getElementById('clock-time').innerText = now.toLocaleTimeString('pt-BR');
-            const options = { day: '2-digit', month: 'short', year: 'numeric' };
-            document.getElementById('clock-date').innerText = now.toLocaleDateString('pt-BR', options).toUpperCase();
+            document.getElementById('clock-time').innerText = new Date().toLocaleTimeString();
         }
         setInterval(updateClock, 1000);
-        updateClock();
 
-        // --- SISTEMA ARRASTÁVEL ---
-        const clock = document.getElementById('draggable-clock');
-        let isDragging = false, offset = { x: 0, y: 0 };
-
-        clock.onmousedown = (e) => {
-            isDragging = true;
-            offset.x = e.clientX - clock.offsetLeft;
-            offset.y = e.clientY - clock.offsetTop;
-        };
-        document.onmousemove = (e) => {
-            if (!isDragging) return;
-            clock.style.left = (e.clientX - offset.x) + 'px';
-            clock.style.top = (e.clientY - offset.y) + 'px';
-            clock.style.right = 'auto';
-        };
+        const dragEl = document.getElementById('drag-clock');
+        let isDragging = false, offset = {x:0, y:0};
+        dragEl.onmousedown = (e) => { isDragging = true; offset = {x: e.clientX - dragEl.offsetLeft, y: e.clientY - dragEl.offsetTop}; };
+        document.onmousemove = (e) => { if(isDragging) { dragEl.style.left = (e.clientX - offset.x)+'px'; dragEl.style.top = (e.clientY - offset.y)+'px'; } };
         document.onmouseup = () => isDragging = false;
 
         // --- LÓGICA DO JOGO ---
         function format(n) {
-            if (n >= 1e12) return (n/1e12).toFixed(2) + "T";
-            if (n >= 1e9) return (n/1e9).toFixed(2) + "B";
-            if (n >= 1e6) return (n/1e6).toFixed(2) + "M";
-            return Math.floor(n).toLocaleString('pt-BR');
+            if(n >= 1e12) return (n/1e12).toFixed(2) + "T";
+            if(n >= 1e9) return (n/1e9).toFixed(2) + "B";
+            if(n >= 1e6) return (n/1e6).toFixed(2) + "M";
+            return Math.floor(n).toLocaleString();
         }
 
         function updateUI() {
             document.getElementById('score').innerText = format(game.score);
-            document.getElementById('sps').innerText = format(game.autoVal * game.rebMultiplier * game.eventMultiplier);
+            document.getElementById('sps').innerText = format(game.autoVal * game.rebirthMult * game.eventMult);
             document.getElementById('rebirth-count').innerText = game.rebirths;
-            document.getElementById('rebirth-mult').innerText = format(game.rebMultiplier);
+            document.getElementById('rebirth-mult').innerText = game.rebirthMult;
             
             upgrades.forEach((u, i) => {
-                const el = document.getElementById(`item-${i}`);
-                if (el) {
-                    if (game.score >= u.cost) el.classList.remove('locked'), el.classList.add('unlocked');
-                    else el.classList.add('locked'), el.classList.remove('unlocked');
-                    el.querySelector('.shop-cost').innerText = "$" + format(u.cost);
+                const el = document.getElementById(`u-${i}`);
+                if(el) {
+                    el.className = `shop-item ${game.score >= u.cost ? 'unlocked' : 'locked'}`;
+                    el.querySelector('.shop-cost').innerText = `$ ${format(u.cost)}`;
+                    el.querySelector('.count').innerText = u.count;
                 }
             });
         }
 
-        function initShop() {
-            const list = document.getElementById('shop-list');
-            list.innerHTML = "";
-            upgrades.forEach((u, i) => {
-                const div = document.createElement('div');
-                div.className = 'shop-item locked';
-                div.id = `item-${i}`;
-                div.onclick = () => buyItem(i);
-                div.innerHTML = `
-                    <div class="shop-icon">${u.icon}</div>
-                    <div class="shop-info">
-                        <span class="shop-name">${u.name} (x${u.count})</span>
-                        <span class="shop-desc">+${format(u.bonus)} ${u.type}/s</span>
-                        <span class="shop-cost">$${format(u.cost)}</span>
-                    </div>`;
-                list.appendChild(div);
-            });
+        function spawnText(txt, x, y) {
+            const div = document.createElement('div');
+            div.className = 'floating-text';
+            div.innerText = txt;
+            div.style.left = (x || Math.random()*window.innerWidth*0.6) + 'px';
+            div.style.top = (y || Math.random()*window.innerHeight) + 'px';
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 1200);
         }
 
-        function buyItem(i) {
+        document.getElementById('the-ball').onclick = (e) => {
+            let gain = game.clickVal * game.rebirthMult * game.eventMult;
+            game.score += gain;
+            playSfx(400, 'sine', 0.1);
+            spawnText(`+$${format(gain)}`, e.clientX, e.clientY);
+            updateUI();
+        };
+
+        function buy(i) {
             let u = upgrades[i];
-            if (game.score >= u.cost) {
+            if(game.score >= u.cost) {
                 game.score -= u.cost;
                 u.count++;
-                if (u.type === "click") game.clickVal += u.bonus;
+                if(u.type === "click") game.clickVal += u.bonus;
                 else game.autoVal += u.bonus;
                 u.cost = Math.ceil(u.cost * 1.5);
-                initShop();
+                playSfx(600, 'square', 0.2);
                 updateUI();
             }
         }
 
-        document.getElementById('the-ball').onclick = (e) => {
-            let val = game.clickVal * game.rebMultiplier * game.eventMultiplier * game.clickMultiplier;
-            game.score += val;
-            spawnText(`+$${format(val)}`, e.clientX, e.clientY);
+        // --- EVENTOS ADICIONAIS ---
+        function triggerEvent() {
+            const events = [
+                { name: "TEMPO É DINHEIRO! (x2)", action: () => { game.eventMult = 2; setTimeout(() => game.eventMult = 1, 15000); } },
+                { name: "CHUVA DE OURO!", action: () => { 
+                    let interval = setInterval(() => {
+                        const b = document.createElement('div');
+                        b.className = 'mini-gold-ball';
+                        b.style.left = Math.random()*60+'%'; b.style.top = Math.random()*80+'%';
+                        b.onclick = () => { game.score += (game.nextRebirth/100); b.remove(); playSfx(800, 'triangle', 0.3); };
+                        document.getElementById('game-area').appendChild(b);
+                        setTimeout(() => b.remove(), 2000);
+                    }, 500);
+                    setTimeout(() => clearInterval(interval), 10000);
+                }},
+                { name: "CHUTE EXPLOSIVO! (x5 Click)", action: () => {
+                    let old = game.clickVal; game.clickVal *= 5;
+                    setTimeout(() => game.clickVal = old, 10000);
+                }}
+            ];
+            const ev = events[Math.floor(Math.random()*events.length)];
+            const banner = document.getElementById('event-banner');
+            banner.innerText = ev.name; banner.style.display = 'block';
+            ev.action();
+            setTimeout(() => banner.style.display = 'none', 10000);
+        }
+        setInterval(() => { if(Math.random() > 0.7) triggerEvent(); }, 30000);
+
+        // --- REBIRTH ---
+        document.getElementById('rebirth-trigger').onclick = () => {
+            document.getElementById('rebirth-modal').style.display = 'flex';
+            let prog = Math.min(100, (game.score / game.nextRebirth) * 100);
+            document.getElementById('rebirth-progress-bar').style.width = prog + '%';
+            document.getElementById('rebirth-progress-text').innerText = `${format(game.score)} / ${format(game.nextRebirth)}`;
+            document.getElementById('do-rebirth-btn').style.display = game.score >= game.nextRebirth ? 'block' : 'none';
+        };
+
+        document.getElementById('do-rebirth-btn').onclick = () => {
+            game.score = 0; game.clickVal = 1; game.autoVal = 0;
+            game.rebirths++; game.rebirthMult *= 4;
+            game.nextRebirth *= 15;
+            upgrades.forEach(u => { u.count = 0; u.cost = u.baseCost; });
+            document.getElementById('rebirth-modal').style.display = 'none';
+            playSfx(100, 'sawtooth', 1);
             updateUI();
         };
 
-        function spawnText(txt, x, y) {
-            const el = document.createElement('div');
-            el.className = 'floating-text';
-            el.innerText = txt;
-            el.style.left = x + 'px'; el.style.top = y + 'px';
-            document.body.appendChild(el);
-            setTimeout(() => el.remove(), 1000);
-        }
-
-        // --- NOVOS EVENTOS ALEATÓRIOS ---
-        function startEvent() {
-            const banner = document.getElementById('event-banner');
-            const chance = Math.random();
-            banner.style.display = 'block';
-
-            if (chance < 0.3) {
-                banner.innerText = "⚡ TEMPESTADE DE CLIQUES: CLIQUES x10!";
-                game.clickMultiplier = 10;
-                setTimeout(() => { game.clickMultiplier = 1; endEvent(); }, 7000);
-            } else if (chance < 0.6) {
-                banner.innerText = "🏟️ FEBRE NO ESTÁDIO: GANHOS x5!";
-                game.eventMultiplier = 5;
-                setTimeout(() => { game.eventMultiplier = 1; endEvent(); }, 12000);
-            } else {
-                banner.innerText = "💰 CHUVA DE DINHEIRO!";
-                let rain = setInterval(() => {
-                    game.score += (game.autoVal + 10);
-                    spawnText("$$$", Math.random()*window.innerWidth, Math.random()*window.innerHeight);
-                    updateUI();
-                }, 200);
-                setTimeout(() => { clearInterval(rain); endEvent(); }, 8000);
-            }
-        }
-
-        function endEvent() {
-            document.getElementById('event-banner').style.display = 'none';
-        }
-
-        setInterval(() => { if (Math.random() < 0.1) startEvent(); }, 20000);
-
-        // --- REBIRTH ---
-        function openRebirthModal() {
-            document.getElementById('rebirth-modal').style.display = 'flex';
-            const info = document.getElementById('rebirth-info');
-            info.innerText = `Progresso: ${format(game.score)} / ${format(rebirthCost)}`;
-            if (game.score >= rebirthCost) document.getElementById('do-rebirth-btn').style.display = 'inline-block';
-        }
-
-        function closeRebirthModal() { document.getElementById('rebirth-modal').style.display = 'none'; }
-
-        function executeRebirth() {
-            game.rebirths++;
-            game.rebMultiplier *= 4;
-            game.score = 0; game.clickVal = 1; game.autoVal = 0;
-            rebirthCost *= 10;
-            upgrades.forEach(u => { u.count = 0; u.cost = u.cost / Math.pow(1.5, u.count); }); // Simplificado para o exemplo
-            initShop();
-            closeRebirthModal();
-            updateUI();
-        }
-
-        // Auto-Click Loop
+        // --- LOOP PRINCIPAL ---
         setInterval(() => {
-            game.score += (game.autoVal * game.rebMultiplier * game.eventMultiplier) / 10;
-            updateUI();
+            if(game.autoVal > 0) {
+                game.score += (game.autoVal * game.rebirthMult * game.eventMult) / 10;
+                updateUI();
+            }
         }, 100);
 
-        initShop();
+        // Iniciar Loja
+        const list = document.getElementById('shop-list');
+        upgrades.forEach((u, i) => {
+            list.innerHTML += `
+                <div class="shop-item locked" id="u-${i}" onclick="buy(${i})">
+                    <div class="shop-icon">${u.icon}</div>
+                    <div class="shop-info">
+                        <span class="shop-name">${u.name}</span>
+                        <span class="shop-desc">+${format(u.bonus)} ${u.type=='click'?'click':'/s'}</span>
+                        <span class="shop-cost">$ ${format(u.cost)}</span>
+                    </div>
+                    <div style="font-weight:bold">x<span class="count">0</span></div>
+                </div>`;
+        });
         updateUI();
+
     </script>
 </body>
 </html>
