@@ -1,352 +1,340 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FlashHost - Premium</title>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Bola Clicker Tycoon 2.0 - Ultimate</title>
     <style>
         :root {
-            --primary: #6366f1;
-            --bg: #0f172a;
-            --card: #1e293b;
-            --text: #f8fafc;
-            --sidebar-w: 250px;
+            --bg-color: #1a1a2e;
+            --panel-color: #16213e;
+            --accent-color: #0f3460;
+            --text-color: #e94560;
+            --white: #ffffff;
+            --green: #2ecc71;
+            --gold: #f1c40f;
+            --blue-neon: #00d2ff;
         }
 
-        body, html {
-            margin: 0; padding: 0;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            overflow: hidden;
-            width: 100%; height: 100%;
+        * { box-sizing: border-box; user-select: none; font-family: 'Segoe UI', sans-serif; }
+
+        body {
+            margin: 0; padding: 0; height: 100vh;
+            background-color: var(--bg-color); color: var(--white);
+            overflow: hidden; display: flex;
         }
 
-        /* --- MENU LATERAL --- */
-        .sidebar {
-            position: fixed;
-            left: calc(-1 * var(--sidebar-w));
-            top: 0;
-            width: var(--sidebar-w);
-            height: 100%;
-            background: var(--card);
-            z-index: 2000;
-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
-            padding: 20px;
-            box-sizing: border-box;
+        /* --- INTERFACE DE RELÓGIO ARRASTÁVEL --- */
+        #draggable-clock {
+            position: absolute; top: 10px; right: 40%;
+            width: 180px; background: rgba(15, 52, 96, 0.9);
+            border: 2px solid var(--text-color); border-radius: 10px;
+            z-index: 1000; cursor: move; padding: 5px; text-align: center;
+        }
+        #clock-time { font-size: 1.4rem; font-weight: bold; color: var(--white); }
+        #clock-date { font-size: 0.7rem; color: var(--blue-neon); }
+
+        /* --- REBIRTH E STATUS --- */
+        #rebirth-btn-container { position: absolute; top: 20px; left: 20px; z-index: 50; }
+        #rebirth-trigger {
+            background: linear-gradient(45deg, #e67e22, #d35400);
+            border: 2px solid #fff; color: white; padding: 10px 20px;
+            font-weight: bold; border-radius: 10px; cursor: pointer;
+            transition: transform 0.2s;
         }
 
-        .sidebar.active { left: 0; }
-
-        .menu-toggle {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 2100;
-            background: var(--primary);
-            border: none;
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex; align-items: center;
+        #rebirth-modal {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; background: rgba(0,0,0,0.85);
+            z-index: 2000; justify-content: center; align-items: center;
         }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: 0.2s;
-            color: #94a3b8;
-        }
-
-        .nav-item:hover, .nav-item.active {
-            background: rgba(99, 102, 241, 0.15);
-            color: var(--primary);
-        }
-
-        .overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(4px);
-            z-index: 1900;
-        }
-
-        /* --- CONTEÚDO --- */
-        .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        .upload-card {
-            background: var(--card);
-            padding: 40px;
-            border-radius: 24px;
-            text-align: center;
-            border: 2px dashed #334155;
-            max-width: 400px; width: 100%;
-        }
-
-        /* --- GALERIA --- */
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 20px;
-            width: 100%;
-            max-width: 1000px;
-            margin-top: 60px;
-        }
-
-        .gallery-item {
-            background: var(--card);
-            border-radius: 15px;
-            overflow: hidden;
-            aspect-ratio: 1;
-            cursor: pointer;
-            position: relative;
-            border: 1px solid #334155;
-        }
-
-        .gallery-item img, .gallery-item video {
-            width: 100%; height: 100%; object-fit: cover;
-        }
-
-        /* --- BOTÕES --- */
-        .btn-main {
-            background: var(--primary);
-            color: white; border: none;
-            padding: 14px 28px; border-radius: 12px;
-            font-size: 16px; cursor: pointer;
-            display: flex; align-items: center; gap: 10px;
-            margin: 20px auto 0;
-        }
-
-        .modal {
-            display: none;
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
-            align-items: center; justify-content: center; z-index: 3000;
-        }
-
         .modal-content {
-            background: var(--card); padding: 30px; border-radius: 20px;
-            max-width: 350px; text-align: center;
+            background: var(--panel-color); padding: 40px; border-radius: 20px;
+            border: 4px solid var(--text-color); text-align: center; width: 450px;
         }
 
-        /* --- TELA CHEIA IMERSIVA (PARA LINKS ÚNICOS) --- */
-        .fullscreen-view {
-            display: none; 
-            position: fixed; 
-            top: 0; left: 0; 
-            width: 100vw; 
-            height: 100vh;
-            background: black; 
-            z-index: 5000;
-            overflow: hidden;
+        /* --- ÁREA DO JOGO --- */
+        #game-area {
+            width: 65%; height: 100%; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; position: relative;
+            background: radial-gradient(circle at center, #252a40 0%, #1a1a2e 100%);
         }
 
-        .fullscreen-view img, .fullscreen-view video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain; /* Mantém a proporção mas ocupa a tela toda */
-            background: black;
-        }
+        #score-container { font-size: 3.5rem; font-weight: bold; text-shadow: 0 0 15px var(--text-color); }
+        #sps-display { font-size: 1.2rem; color: #aaa; margin-bottom: 30px; }
 
-        .hidden { display: none !important; }
+        #the-ball {
+            width: 260px; height: 260px; border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #ff7675, #d63031);
+            box-shadow: inset -20px -20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(231, 76, 60, 0.4);
+            cursor: pointer; transition: transform 0.05s ease;
+            display: flex; align-items: center; justify-content: center;
+        }
+        #the-ball:active { transform: scale(0.92); }
+        #the-ball::after { content: '★'; font-size: 80px; color: rgba(255,255,255,0.2); }
+
+        /* --- SHOP --- */
+        #shop-area {
+            width: 35%; height: 100%; background-color: var(--panel-color);
+            border-left: 4px solid var(--accent-color); display: flex; flex-direction: column;
+        }
+        #shop-header { padding: 20px; background: var(--accent-color); text-align: center; font-size: 1.5rem; font-weight: bold; }
+        #shop-list { flex: 1; overflow-y: auto; padding: 15px; }
+
+        .shop-item {
+            display: flex; align-items: center; background: rgba(255,255,255,0.05);
+            margin-bottom: 12px; padding: 12px; border-radius: 10px; cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1); transition: 0.2s;
+        }
+        .shop-item:hover { transform: translateX(-5px); background: rgba(255,255,255,0.1); }
+        .shop-item.locked { opacity: 0.4; cursor: not-allowed; filter: grayscale(100%); }
+        .shop-item.unlocked { border-color: var(--green); }
+        .shop-icon { font-size: 2rem; margin-right: 15px; }
+        .shop-info { flex: 1; }
+        .shop-name { font-weight: bold; display: block; }
+        .shop-cost { color: var(--green); font-weight: bold; }
+
+        /* --- EVENTOS --- */
+        #event-banner {
+            position: absolute; top: 80px; background: var(--gold);
+            color: black; padding: 10px 40px; border-radius: 30px;
+            font-weight: bold; display: none; z-index: 100;
+            box-shadow: 0 0 20px var(--gold); animation: pulse 1s infinite;
+        }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+        .floating-text {
+            position: absolute; pointer-events: none; font-weight: bold;
+            font-size: 2rem; color: white; text-shadow: 2px 2px 4px black;
+            animation: floatUp 1s ease-out forwards; z-index: 999;
+        }
+        @keyframes floatUp { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-100px); } }
     </style>
 </head>
 <body>
 
-    <div id="ui-controls">
-        <button class="menu-toggle" onclick="toggleSidebar()">
-            <i data-lucide="menu"></i>
-        </button>
-        <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
-        <nav class="sidebar" id="sidebar">
-            <h2 style="margin-bottom: 30px; color: var(--primary)">FlashHost</h2>
-            <div class="nav-item active" id="nav-home" onclick="switchTab('home')">
-                <i data-lucide="home"></i> Início
-            </div>
-            <div class="nav-item" id="nav-my" onclick="switchTab('my')">
-                <i data-lucide="folder-heart"></i> Minhas
-            </div>
-        </nav>
+    <div id="draggable-clock">
+        <div id="clock-time">00:00:00</div>
+        <div id="clock-date">FEV 07, 2026</div>
     </div>
 
-    <div class="container" id="mainApp">
-        <div id="tab-home" class="tab-content">
-            <div id="step1" class="upload-card">
-                <i data-lucide="cloud-upload" stroke-width="1.5" size="64" style="color: var(--primary)"></i>
-                <h2>Hospedar Arquivo</h2>
-                <input type="file" id="fileInput" accept="image/*,video/*" class="hidden">
-                <button class="btn-main" onclick="document.getElementById('fileInput').click()">
-                    <i data-lucide="folder-open"></i> Selecionar
-                </button>
-            </div>
-
-            <div id="step3" class="result-screen hidden">
-                <div id="mediaPreviewContainer" style="max-width: 400px; margin: 0 auto"></div>
-                <div style="background: #0f172a; padding: 15px; border-radius: 12px; display: flex; gap: 10px; margin-top: 20px">
-                    <input type="text" id="generatedLink" readonly style="background: transparent; border: none; color: #94a3b8; flex: 1">
-                    <button onclick="copyLink()" style="background: none; border: none; color: var(--primary); cursor: pointer">
-                        <i data-lucide="copy"></i>
-                    </button>
-                </div>
-                <button class="btn-main" style="background: #334155" onclick="location.reload()">Subir outro</button>
-            </div>
-        </div>
-
-        <div id="tab-my" class="tab-content hidden">
-            <h2 style="text-align: center">Meus Arquivos</h2>
-            <div class="gallery-grid" id="galleryGrid"></div>
-        </div>
+    <div id="rebirth-btn-container">
+        <button id="rebirth-trigger" onclick="openRebirthModal()">⚡ RENASCIMENTO</button>
     </div>
 
-    <div class="modal" id="confirmModal">
+    <div id="rebirth-modal">
         <div class="modal-content">
-            <h3>Confirmar Upload?</h3>
-            <p id="fileNameDisplay" style="color: #94a3b8"></p>
-            <div style="display: flex; gap: 10px; margin-top: 20px">
-                <button id="uploadBtn" class="btn-main" onclick="confirmUpload()">Sim</button>
-                <button class="btn-main" style="background: #ef4444" onclick="closeModal()">Não</button>
-            </div>
+            <h2>EVOLUÇÃO SUPREMA</h2>
+            <p>Reinicie o progresso por um bônus de <strong>4x Permanente</strong>.</p>
+            <div id="rebirth-info" style="margin: 20px 0; font-weight: bold; color: var(--gold);"></div>
+            <button id="do-rebirth-btn" onclick="executeRebirth()" style="padding: 15px 30px; background: var(--green); border: none; color: white; border-radius: 10px; cursor: pointer; display: none;">RENASCER AGORA!</button>
+            <button onclick="closeRebirthModal()" style="margin-top: 10px; background: none; border: none; color: #aaa; cursor: pointer;">Cancelar</button>
         </div>
     </div>
 
-    <div id="fullscreenView" class="fullscreen-view">
-        <div id="fullContent" style="width:100%; height:100%;"></div>
-        </div>
+    <div id="game-area">
+        <div id="event-banner">EVENTO ATIVO!</div>
+        <div style="color: var(--gold); font-weight: bold;">Renascimentos: <span id="rebirth-count">0</span> (x<span id="rebirth-mult">1</span>)</div>
+        <div id="score-container">$<span id="score">0</span></div>
+        <div id="sps-display">Ganhos/Seg: <span id="sps">0</span></div>
+        <div id="the-ball"></div>
+    </div>
+
+    <div id="shop-area">
+        <div id="shop-header">MERCADO DA BOLA</div>
+        <div id="shop-list"></div>
+    </div>
 
     <script>
-        lucide.createIcons();
+        // --- DADOS DO JOGO ---
+        let game = {
+            score: 0,
+            clickVal: 1,
+            autoVal: 0,
+            rebirths: 0,
+            rebMultiplier: 1,
+            eventMultiplier: 1,
+            clickMultiplier: 1
+        };
 
-        const supabaseUrl = 'https://mgrvyboskvvlcvqclufh.supabase.co';
-        const supabaseKey = 'sb_publishable_HsVRJqKhYoCCVTnPTvgp9w_okpI3WE0';
-        const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        let rebirthCost = 1000000;
 
-        let selectedFile = null;
-        let myUploads = JSON.parse(localStorage.getItem('flashhost_uploads') || '[]');
+        // --- LISTA COMPLETA DE UPGRADES (ORIGINAL) ---
+        let upgrades = [
+            { name: "Dedo Extra", cost: 15, bonus: 1, type: "auto", icon: "👆", count: 0 },
+            { name: "Mouse Gamer", cost: 100, bonus: 5, type: "auto", icon: "🖱️", count: 0 },
+            { name: "Jogador Amador", cost: 500, bonus: 20, type: "click", icon: "⚽", count: 0 },
+            { name: "Treinador", cost: 1500, bonus: 50, type: "auto", icon: "📣", count: 0 },
+            { name: "Máquina de Chutes", cost: 5000, bonus: 150, type: "auto", icon: "⚙️", count: 0 },
+            { name: "Estádio Local", cost: 20000, bonus: 500, type: "auto", icon: "🏟️", count: 0 },
+            { name: "Patrocínio de TV", cost: 100000, bonus: 1500, type: "click", icon: "📺", count: 0 },
+            { name: "Clonagem de Bolas", cost: 500000, bonus: 5000, type: "auto", icon: "🧬", count: 0 },
+            { name: "Robô Jogador", cost: 2000000, bonus: 15000, type: "auto", icon: "🤖", count: 0 },
+            { name: "Fábrica de Bolas", cost: 10000000, bonus: 50000, type: "auto", icon: "🏭", count: 0 },
+            { name: "Satélite Esportivo", cost: 50000000, bonus: 200000, type: "click", icon: "🛰️", count: 0 },
+            { name: "Base na Lua", cost: 200000000, bonus: 1000000, type: "auto", icon: "🌑", count: 0 },
+            { name: "Singularidade Divina", cost: 5000000000, bonus: 10000000, type: "auto", icon: "✨", count: 0 }
+        ];
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.getElementById('overlay').style.display = 
-                document.getElementById('sidebar').classList.contains('active') ? 'block' : 'none';
+        // --- RELÓGIO AO VIVO ---
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock-time').innerText = now.toLocaleTimeString('pt-BR');
+            const options = { day: '2-digit', month: 'short', year: 'numeric' };
+            document.getElementById('clock-date').innerText = now.toLocaleDateString('pt-BR', options).toUpperCase();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // --- SISTEMA ARRASTÁVEL ---
+        const clock = document.getElementById('draggable-clock');
+        let isDragging = false, offset = { x: 0, y: 0 };
+
+        clock.onmousedown = (e) => {
+            isDragging = true;
+            offset.x = e.clientX - clock.offsetLeft;
+            offset.y = e.clientY - clock.offsetTop;
+        };
+        document.onmousemove = (e) => {
+            if (!isDragging) return;
+            clock.style.left = (e.clientX - offset.x) + 'px';
+            clock.style.top = (e.clientY - offset.y) + 'px';
+            clock.style.right = 'auto';
+        };
+        document.onmouseup = () => isDragging = false;
+
+        // --- LÓGICA DO JOGO ---
+        function format(n) {
+            if (n >= 1e12) return (n/1e12).toFixed(2) + "T";
+            if (n >= 1e9) return (n/1e9).toFixed(2) + "B";
+            if (n >= 1e6) return (n/1e6).toFixed(2) + "M";
+            return Math.floor(n).toLocaleString('pt-BR');
         }
 
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            if(tab === 'home') {
-                document.getElementById('tab-home').classList.remove('hidden');
-            } else {
-                document.getElementById('tab-my').classList.remove('hidden');
-                renderGallery();
-            }
-        }
-
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                selectedFile = file;
-                document.getElementById('fileNameDisplay').innerText = file.name;
-                document.getElementById('confirmModal').style.display = 'flex';
-            }
-        });
-
-        function closeModal() { document.getElementById('confirmModal').style.display = 'none'; }
-
-        async function confirmUpload() {
-            const btn = document.getElementById('uploadBtn');
-            btn.disabled = true; btn.innerText = "Processando...";
-            try {
-                const fileId = Math.random().toString(36).substring(2, 10);
-                const fileName = `${fileId}.${selectedFile.name.split('.').pop()}`;
-                const mediaType = selectedFile.type.startsWith('image/') ? 'image' : 'video';
-
-                const { data: storageData, error: storageError } = await _supabase.storage
-                    .from('midias').upload(fileName, selectedFile);
-                if (storageError) throw storageError;
-
-                const { data: { publicUrl } } = _supabase.storage.from('midias').getPublicUrl(fileName);
-
-                await _supabase.from('datar').insert([{ id: fileId, media_url: publicUrl, media_type: mediaType }]);
-
-                const newUpload = { id: fileId, data: publicUrl, type: mediaType };
-                myUploads.push(newUpload);
-                localStorage.setItem('flashhost_uploads', JSON.stringify(myUploads));
-                
-                closeModal();
-                showResult(newUpload);
-            } catch (error) {
-                alert("Erro: " + error.message);
-            }
-        }
-
-        function showResult(file) {
-            document.getElementById('step1').classList.add('hidden');
-            document.getElementById('step3').classList.remove('hidden');
-            const finalLink = `${window.location.protocol}//${window.location.host}${window.location.pathname}?id=${file.id}`;
-            document.getElementById('generatedLink').value = finalLink;
-        }
-
-        function renderGallery() {
-            const grid = document.getElementById('galleryGrid');
-            grid.innerHTML = myUploads.map(file => `
-                <div class="gallery-item" onclick="window.open('?id=${file.id}', '_blank')">
-                    <${file.type === 'image' ? 'img' : 'video'} src="${file.data}">
-                </div>
-            `).join('');
-        }
-
-        // FUNÇÃO DE TELA CHEIA IMERSIVA
-        function openImmersive(file) {
-            // Esconde toda a interface do site
-            document.getElementById('ui-controls').classList.add('hidden');
-            document.getElementById('mainApp').classList.add('hidden');
+        function updateUI() {
+            document.getElementById('score').innerText = format(game.score);
+            document.getElementById('sps').innerText = format(game.autoVal * game.rebMultiplier * game.eventMultiplier);
+            document.getElementById('rebirth-count').innerText = game.rebirths;
+            document.getElementById('rebirth-mult').innerText = format(game.rebMultiplier);
             
-            const view = document.getElementById('fullscreenView');
-            const content = document.getElementById('fullContent');
-            
-            content.innerHTML = file.type === 'image'
-                ? `<img src="${file.media_url}">`
-                : `<video src="${file.media_url}" autoplay loop playsinline controls></video>`;
-            
-            view.style.display = 'block';
-            document.body.style.overflow = 'hidden';
-        }
-
-        window.onload = async () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const id = urlParams.get('id');
-            if (id) {
-                const { data, error } = await _supabase.from('datar').select('*').eq('id', id).single();
-                if (data && !error) {
-                    openImmersive(data);
+            upgrades.forEach((u, i) => {
+                const el = document.getElementById(`item-${i}`);
+                if (el) {
+                    if (game.score >= u.cost) el.classList.remove('locked'), el.classList.add('unlocked');
+                    else el.classList.add('locked'), el.classList.remove('unlocked');
+                    el.querySelector('.shop-cost').innerText = "$" + format(u.cost);
                 }
+            });
+        }
+
+        function initShop() {
+            const list = document.getElementById('shop-list');
+            list.innerHTML = "";
+            upgrades.forEach((u, i) => {
+                const div = document.createElement('div');
+                div.className = 'shop-item locked';
+                div.id = `item-${i}`;
+                div.onclick = () => buyItem(i);
+                div.innerHTML = `
+                    <div class="shop-icon">${u.icon}</div>
+                    <div class="shop-info">
+                        <span class="shop-name">${u.name} (x${u.count})</span>
+                        <span class="shop-desc">+${format(u.bonus)} ${u.type}/s</span>
+                        <span class="shop-cost">$${format(u.cost)}</span>
+                    </div>`;
+                list.appendChild(div);
+            });
+        }
+
+        function buyItem(i) {
+            let u = upgrades[i];
+            if (game.score >= u.cost) {
+                game.score -= u.cost;
+                u.count++;
+                if (u.type === "click") game.clickVal += u.bonus;
+                else game.autoVal += u.bonus;
+                u.cost = Math.ceil(u.cost * 1.5);
+                initShop();
+                updateUI();
             }
         }
 
-        function copyLink() {
-            const copyText = document.getElementById("generatedLink");
-            copyText.select();
-            document.execCommand("copy");
-            alert("Link Único Copiado!");
+        document.getElementById('the-ball').onclick = (e) => {
+            let val = game.clickVal * game.rebMultiplier * game.eventMultiplier * game.clickMultiplier;
+            game.score += val;
+            spawnText(`+$${format(val)}`, e.clientX, e.clientY);
+            updateUI();
+        };
+
+        function spawnText(txt, x, y) {
+            const el = document.createElement('div');
+            el.className = 'floating-text';
+            el.innerText = txt;
+            el.style.left = x + 'px'; el.style.top = y + 'px';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
         }
+
+        // --- NOVOS EVENTOS ALEATÓRIOS ---
+        function startEvent() {
+            const banner = document.getElementById('event-banner');
+            const chance = Math.random();
+            banner.style.display = 'block';
+
+            if (chance < 0.3) {
+                banner.innerText = "⚡ TEMPESTADE DE CLIQUES: CLIQUES x10!";
+                game.clickMultiplier = 10;
+                setTimeout(() => { game.clickMultiplier = 1; endEvent(); }, 7000);
+            } else if (chance < 0.6) {
+                banner.innerText = "🏟️ FEBRE NO ESTÁDIO: GANHOS x5!";
+                game.eventMultiplier = 5;
+                setTimeout(() => { game.eventMultiplier = 1; endEvent(); }, 12000);
+            } else {
+                banner.innerText = "💰 CHUVA DE DINHEIRO!";
+                let rain = setInterval(() => {
+                    game.score += (game.autoVal + 10);
+                    spawnText("$$$", Math.random()*window.innerWidth, Math.random()*window.innerHeight);
+                    updateUI();
+                }, 200);
+                setTimeout(() => { clearInterval(rain); endEvent(); }, 8000);
+            }
+        }
+
+        function endEvent() {
+            document.getElementById('event-banner').style.display = 'none';
+        }
+
+        setInterval(() => { if (Math.random() < 0.1) startEvent(); }, 20000);
+
+        // --- REBIRTH ---
+        function openRebirthModal() {
+            document.getElementById('rebirth-modal').style.display = 'flex';
+            const info = document.getElementById('rebirth-info');
+            info.innerText = `Progresso: ${format(game.score)} / ${format(rebirthCost)}`;
+            if (game.score >= rebirthCost) document.getElementById('do-rebirth-btn').style.display = 'inline-block';
+        }
+
+        function closeRebirthModal() { document.getElementById('rebirth-modal').style.display = 'none'; }
+
+        function executeRebirth() {
+            game.rebirths++;
+            game.rebMultiplier *= 4;
+            game.score = 0; game.clickVal = 1; game.autoVal = 0;
+            rebirthCost *= 10;
+            upgrades.forEach(u => { u.count = 0; u.cost = u.cost / Math.pow(1.5, u.count); }); // Simplificado para o exemplo
+            initShop();
+            closeRebirthModal();
+            updateUI();
+        }
+
+        // Auto-Click Loop
+        setInterval(() => {
+            game.score += (game.autoVal * game.rebMultiplier * game.eventMultiplier) / 10;
+            updateUI();
+        }, 100);
+
+        initShop();
+        updateUI();
     </script>
 </body>
-                    </html>
-        
+</html>
