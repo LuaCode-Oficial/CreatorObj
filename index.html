@@ -27,6 +27,14 @@
             min-height: 100vh;
         }
 
+        /* Estilo de Foco para TV */
+        [tabindex]:focus {
+            outline: 5px solid var(--accent) !important;
+            outline-offset: 4px;
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
         header {
             text-align: center;
             padding: 2rem;
@@ -44,7 +52,6 @@
             font-size: 1.1rem;
         }
 
-        /* Grid de Seleção */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -88,7 +95,6 @@
             color: var(--text);
         }
 
-        /* Área de Aprendizado */
         #learning-area {
             display: none;
             width: 95%;
@@ -267,34 +273,34 @@
 </head>
 <body>
 
-    <header>
+    <header id="header-main">
         <h1>MathMaster AI</h1>
         <p class="subtitle">Escolha o que deseja dominar hoje. A IA irá desenhar e explicar para você.</p>
     </header>
 
     <div class="grid-container" id="menu-grid">
-        <div class="card" onclick="startLesson('soma', 'Adição ➕')">
+        <div class="card" tabindex="0" onclick="startLesson('soma', 'Adição ➕')">
             <svg class="icon" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="45" fill="#e0e7ff" />
                 <path d="M50 25 V75 M25 50 H75" stroke="#4f46e5" stroke-width="8" stroke-linecap="round" />
             </svg>
             <h3>Somar</h3>
         </div>
-        <div class="card" onclick="startLesson('subtracao', 'Subtração ➖')">
+        <div class="card" tabindex="0" onclick="startLesson('subtracao', 'Subtração ➖')">
             <svg class="icon" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="45" fill="#fee2e2" />
                 <path d="M25 50 H75" stroke="#ef4444" stroke-width="8" stroke-linecap="round" />
             </svg>
             <h3>Subtrair</h3>
         </div>
-        <div class="card" onclick="startLesson('multiplicacao', 'Multiplicação ✖')">
+        <div class="card" tabindex="0" onclick="startLesson('multiplicacao', 'Multiplicação ✖')">
             <svg class="icon" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="45" fill="#ffedd5" />
                 <path d="M30 30 L70 70 M70 30 L30 70" stroke="#f97316" stroke-width="8" stroke-linecap="round" />
             </svg>
             <h3>Multiplicar</h3>
         </div>
-        <div class="card" onclick="startLesson('divisao', 'Divisão ➗')">
+        <div class="card" tabindex="0" onclick="startLesson('divisao', 'Divisão ➗')">
             <svg class="icon" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="45" fill="#dbeafe" />
                 <circle cx="50" cy="30" r="6" fill="#2563eb" />
@@ -303,7 +309,7 @@
             </svg>
             <h3>Dividir</h3>
         </div>
-        <div class="card" onclick="startLesson('potencia', 'Potência 🔢')">
+        <div class="card" tabindex="0" onclick="startLesson('potencia', 'Potência 🔢')">
             <svg class="icon" viewBox="0 0 100 100">
                 <rect x="20" y="20" width="60" height="60" rx="10" fill="#f3e8ff" />
                 <text x="35" y="65" font-family="Arial" font-weight="bold" font-size="40" fill="#9333ea">x</text>
@@ -311,14 +317,14 @@
             </svg>
             <h3>Potência</h3>
         </div>
-        <div class="card" onclick="startLesson('raiz', 'Raiz Quadrada √')">
+        <div class="card" tabindex="0" onclick="startLesson('raiz', 'Raiz Quadrada √')">
             <svg class="icon" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="45" fill="#d1fae5" />
                 <path d="M20 55 L35 70 L45 30 H80" stroke="#059669" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             <h3>Raiz</h3>
         </div>
-        <div class="card" onclick="startLesson('porcentagem', 'Porcentagem %')">
+        <div class="card" tabindex="0" onclick="startLesson('porcentagem', 'Porcentagem %')">
             <svg class="icon" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="45" fill="#fce7f3" />
                 <text x="25" y="65" font-family="Arial" font-weight="bold" font-size="45" fill="#db2777">%</text>
@@ -330,7 +336,7 @@
     <div id="learning-area">
         <div class="top-bar">
             <h2 id="lesson-title" style="margin:0; color:var(--primary);">Tópico</h2>
-            <button class="back-btn" onclick="closeLesson()">← Voltar ao Menu</button>
+            <button class="back-btn" tabindex="0" onclick="closeLesson()">← Voltar ao Menu</button>
         </div>
 
         <div class="content-split">
@@ -346,8 +352,8 @@
                     <div class="message bot-msg">Olá! Eu sou sua IA professora de matemática. O que você gostaria de saber sobre <span id="topic-name"></span>?</div>
                 </div>
                 <div class="input-area">
-                    <input type="text" id="user-input" placeholder="Faça uma pergunta sobre a explicação..." onkeypress="handleEnter(event)">
-                    <button class="send-btn" id="send-btn" onclick="sendMessage()">Enviar</button>
+                    <input type="text" id="user-input" tabindex="0" placeholder="Faça uma pergunta..." onkeypress="handleEnter(event)">
+                    <button class="send-btn" id="send-btn" tabindex="0" onclick="sendMessage()">Enviar</button>
                 </div>
             </div>
         </div>
@@ -357,12 +363,11 @@
         // ==========================================
         // CONFIGURAÇÃO
         // ==========================================
-        const API_KEY = "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"; // INSIRA SUA API KEY AQUI
+        const API_KEY = "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"; 
         
         let currentTopic = "";
         let conversationHistory = [];
         
-       
         const menuGrid = document.getElementById('menu-grid');
         const learningArea = document.getElementById('learning-area');
         const lessonTitle = document.getElementById('lesson-title');
@@ -373,15 +378,39 @@
         const canvas = document.getElementById('mathCanvas');
         const ctx = canvas.getContext('2d');
 
-        function startLesson(topicId, topicNiceName) {
-            if(API_KEY === "coloque a api aqui" || API_KEY === "") {
-                alert("Por favor, edite o arquivo HTML e insira sua chave da API Groq na variável API_KEY.");
-                return;
-            }
+        // ==========================================
+        // LÓGICA DE NAVEGAÇÃO TV (SETAS)
+        // ==========================================
+        document.addEventListener('keydown', function(e) {
+            const focusableElements = 'button, [href], input, [tabindex]:not([tabindex="-1"])';
+            const elements = Array.from(document.querySelectorAll(focusableElements)).filter(el => {
+                return el.offsetParent !== null; // Apenas elementos visíveis
+            });
+            
+            let currentIndex = elements.indexOf(document.activeElement);
 
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                let nextIndex = (currentIndex + 1) % elements.length;
+                elements[nextIndex].focus();
+                e.preventDefault();
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                let prevIndex = (currentIndex - 1 + elements.length) % elements.length;
+                elements[prevIndex].focus();
+                e.preventDefault();
+            } else if (e.key === 'Enter' && currentIndex === -1) {
+                // Se nada tiver foco, foca no primeiro card
+                if(elements.length > 0) elements[0].focus();
+            }
+        });
+
+        function startLesson(topicId, topicNiceName) {
             currentTopic = topicNiceName;
+            
+            // Gerenciamento de Visibilidade
             menuGrid.style.display = 'none';
+            document.getElementById('header-main').style.display = 'none';
             learningArea.style.display = 'flex';
+            
             lessonTitle.innerText = topicNiceName;
             topicNameSpan.innerText = topicNiceName;
             
@@ -390,12 +419,19 @@
             clearCanvas();
 
             triggerAI(`Gere um exemplo prático de ${topicNiceName} para iniciantes. Explique passo a passo e forneça os comandos de desenho JSON para eu visualizar no quadro.`);
+            
+            // Foca no input automaticamente para facilitar na TV
+            setTimeout(() => userInput.focus(), 500);
         }
 
         function closeLesson() {
             learningArea.style.display = 'none';
             menuGrid.style.display = 'grid';
+            document.getElementById('header-main').style.display = 'block';
             clearCanvas();
+            
+            // Volta o foco para o primeiro card
+            setTimeout(() => document.querySelector('.card').focus(), 100);
         }
 
         function handleEnter(e) {
@@ -417,31 +453,20 @@
             const systemPrompt = `
             Você é uma IA Professora de Matemática Visual Profissional e Lúdica. 
             Você DEVE responder SEMPRE em formato JSON estrito.
-            
             Sua tarefa:
             1. Ensinar operações matemáticas (${currentTopic}).
             2. Revisar cálculos 3 vezes. 100% de precisão é obrigatório.
-            3. No "draw_commands", você pode usar Emojis (como 🍎, 🍊, ⭐) para ilustrar quantidades, especialmente em Divisão e Soma.
-            4. Se usar objetos (ex: 4 maçãs), desenhe-os primeiro, depois use setas para mostrar a operação.
-            
-            DIRETRIZES DE PRECISÃO VISUAL:
-            - O Canvas tem 800x600. 
-            - Nunca coloque textos ou círculos uns sobre os outros.
-            - "arrow": x1/y1 é a origem, x2/y2 é a ponta. Aponte EXATAMENTE para o centro do objeto ou número que está explicando.
-            - "circle": Deve envolver o número ou grupo de objetos com precisão.
-            - Se for dividir 4 por 2, desenhe 4 maçãs (🍎) em uma linha e use "line" ou "arrow" para separá-las em dois grupos de 2.
+            3. No "draw_commands", você pode usar Emojis (como 🍎, 🍊, ⭐) para ilustrar quantidades.
             
             Estrutura do JSON:
             {
-                "explanation": "Explicação pedagógica profissional em HTML.",
+                "explanation": "Explicação pedagógica em HTML.",
                 "draw_commands": [
                     { "type": "clear" }, 
                     { "type": "text", "content": "🍎🍎", "x": 400, "y": 200, "size": 50 },
                     { "type": "arrow", "x1": 200, "y1": 200, "x2": 380, "y2": 200, "color": "#00FF00", "label": "Dividindo..." }
                 ]
             }
-
-            Pergunta: ${promptText}
             `;
 
             const messages = [
@@ -559,7 +584,11 @@
             }
         }
 
-        window.onload = clearCanvas;
+        window.onload = () => {
+            clearCanvas();
+            // Foca no primeiro card ao carregar para TVs
+            document.querySelector('.card').focus();
+        };
     </script>
 </body>
 </html>
