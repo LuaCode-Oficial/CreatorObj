@@ -1,481 +1,487 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minecraft 1.18.32.02 Command Architect</title>
+    <title>CriativeGames</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
-        :root {
-            --bg-color: #121212;
-            --chat-bg: #1e1e1e;
-            --primary: #4caf50; /* Verde Minecraft */
-            --primary-hover: #43a047;
-            --text-main: #e0e0e0;
-            --text-secondary: #a0a0a0;
-            --user-msg-bg: #2c2c2c;
-            --ai-msg-bg: #253326;
-            --code-bg: #0d0d0d;
-            --border: #333;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin: 0; padding: 0; background-color: #1a1a1a; color: white; }
+        .menu-topo { background-color: #000; color: #fff; height: 60px; display: flex; align-items: center; padding: 0 20px; position: relative; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .tres-barrinhas { font-size: 24px; cursor: pointer; position: absolute; left: 20px; z-index: 10; }
+        .nome-site { font-size: 22px; font-weight: bold; letter-spacing: 1px; margin: 0 auto; }
+        .menu-lateral { position: fixed; top: 0; left: -280px; width: 280px; height: 100vh; background-color: #111; color: #fff; transition: all 0.4s ease; z-index: 100; box-shadow: 5px 0 15px rgba(0,0,0,0.5); padding-top: 20px; }
+        .menu-lateral.ativa { left: 0; }
+        .header-menu-lateral { display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 30px; padding: 0 15px; }
+        .titulo-menu { font-size: 24px; font-weight: bold; }
+        .fechar { position: absolute; left: 20px; font-size: 22px; cursor: pointer; color: #ff4b2b; }
+        .menu-lateral ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        .menu-lateral li { width: 85%; margin-bottom: 15px; }
+        .menu-lateral a { text-decoration: none; color: white; background-color: #333; display: flex; align-items: center; justify-content: flex-start; padding: 12px 20px; border-radius: 8px; transition: 0.3s; border: 1px solid #444; }
+        .menu-lateral a:hover { background-color: #ff4b2b; transform: scale(1.05); }
+        .menu-lateral i { margin-right: 15px; font-size: 18px; width: 25px; text-align: center; }
         
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+        .secao { display: none; padding: 20px; max-width: 850px; margin: 0 auto; text-align: left; }
+        .secao.ativa { display: block; animation: slideUp 0.5s ease; }
+
+        .post-card { 
+            background: #222; 
+            border-radius: 15px; 
+            padding: 25px; 
+            margin-bottom: 30px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 1px solid #333;
         }
-
-        /* Header */
-        header {
-            padding: 20px;
-            background-color: var(--chat-bg);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            z-index: 10;
-        }
-
-        header h1 { font-size: 1.2rem; letter-spacing: 1px; color: var(--primary); }
-        header p { font-size: 0.8rem; color: var(--text-secondary); }
-
-        /* Chat Area */
-        #chat-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            scroll-behavior: smooth;
-        }
-
-        /* Scrollbar customizada */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-color); }
-        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
-
-        /* Mensagens */
-        .message {
-            max-width: 85%;
-            padding: 15px 20px;
-            border-radius: 12px;
-            line-height: 1.6;
-            position: relative;
-            animation: fadeIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-            font-size: 0.95rem;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        .user-message {
-            align-self: flex-end;
-            background-color: var(--user-msg-bg);
-            border-bottom-right-radius: 2px;
-            border: 1px solid var(--border);
-        }
-
-        .ai-message {
-            align-self: flex-start;
-            background-color: var(--ai-msg-bg);
-            border-bottom-left-radius: 2px;
-            border: 1px solid #2d442f;
-        }
-
-        /* Input Area */
-        .input-area {
-            background-color: var(--chat-bg);
-            padding: 20px;
-            border-top: 1px solid var(--border);
-            display: flex;
-            gap: 15px;
-            align-items: flex-end;
-        }
-
-        textarea {
-            flex: 1;
-            background-color: #2a2a2a;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: white;
-            padding: 12px;
-            resize: none;
-            height: 60px;
-            min-height: 60px;
-            max-height: 150px;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-
-        textarea:focus { border-color: var(--primary); }
-
-        button#send-btn {
-            width: 50px;
-            height: 50px;
-            background-color: var(--primary);
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-
-        button#send-btn:hover { background-color: var(--primary-hover); }
-        button#send-btn:active { transform: scale(0.95); }
         
-        button#send-btn svg { stroke: white; width: 24px; height: 24px; }
-
-        /* Estilização Profissional do Conteúdo (Markdown) */
-        .ai-message strong { color: #fff; font-weight: 600; }
-        .ai-message ul { margin-left: 20px; margin-bottom: 10px; }
-        .ai-message h3 { margin-top: 15px; margin-bottom: 10px; color: var(--primary); font-size: 1.1rem; }
-        
-        /* Bloco de Código e Botão Copiar */
-        .code-container {
-            margin: 15px 0;
-            background-color: var(--code-bg);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .code-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            background-color: #1a1a1a;
-            border-bottom: 1px solid var(--border);
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            font-family: monospace;
-        }
-
-        .copy-btn {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            cursor: pointer;
-            padding: 4px 10px;
+        .embed-container {
+            background-color: #2f3136;
+            border-left: 4px solid #ff4b2b;
             border-radius: 4px;
-            font-size: 0.75rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            transition: all 0.2s;
-        }
-
-        .copy-btn:hover { background-color: #333; color: white; }
-        .copy-btn svg { width: 14px; height: 14px; }
-
-        pre {
+            margin: 15px 0;
             padding: 15px;
-            overflow-x: auto;
-            margin: 0;
+            max-width: 520px;
+            transition: 0.3s;
         }
-
-        code {
-            font-family: 'Consolas', 'Monaco', monospace;
-            color: #a5d6ff;
-            font-size: 0.9rem;
-        }
-
-        /* Loaders */
-        .typing-indicator {
-            display: flex;
-            gap: 5px;
-            padding: 10px 0;
-        }
-        .dot {
-            width: 8px;
-            height: 8px;
-            background: var(--text-secondary);
-            border-radius: 50%;
-            animation: bounce 1.4s infinite ease-in-out both;
-        }
-        .dot:nth-child(1) { animation-delay: -0.32s; }
-        .dot:nth-child(2) { animation-delay: -0.16s; }
-
-        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+        .embed-provider { font-size: 12px; color: #b9bbbe; margin-bottom: 5px; text-transform: uppercase; font-weight: bold; }
+        .embed-title { color: #00aff4; font-weight: bold; text-decoration: none; display: block; margin-bottom: 8px; font-size: 16px; line-height: 1.3; }
+        .embed-description { font-size: 13px; color: #dcddde; margin-bottom: 10px; }
+        .embed-thumbnail { width: 100%; border-radius: 4px; cursor: pointer; object-fit: cover; max-height: 280px; display: block; }
         
-        .settings-btn { position: absolute; top: 20px; right: 20px; background: none; border: none; cursor: pointer; }
-        .settings-btn svg { stroke: var(--text-secondary); }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 90; }
+        .overlay.ativa { display: block; }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .embedded-media { max-width: 100%; border-radius: 8px; cursor: pointer; margin: 15px 0; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .video-container { position: relative; width: 100%; max-width: 600px; margin: 15px 0; background: #000; border-radius: 8px; overflow: hidden; }
+        .video-container video { width: 100%; display: block; cursor: pointer; }
+        .play-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 50px; color: white; opacity: 0.8; pointer-events: none; }
+
+        .lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .lightbox.ativa { display: flex; }
+        .lightbox-controls { position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; }
+        .lightbox-controls button { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; width: 45px; height: 45px; border-radius: 8px; cursor: pointer; font-size: 20px; }
+        .lightbox-content { max-width: 90vw; max-height: 90vh; }
+
+        .area-reacoes { display: flex; align-items: center; gap: 8px; margin-top: 15px; padding-top: 10px; border-top: 1px solid #333; flex-wrap: wrap; }
+        .btn-acao { background: #333; border: 1px solid #444; color: #ccc; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; transition: 0.2s; }
+        .btn-acao:hover { background: #444; transform: scale(1.05); }
+        .btn-acao.ativo { background: #ff4b2b; color: white; border-color: #ff4b2b; animation: pop 0.3s ease; }
+        .btn-acao.ativo-azul { background: #00aff4; color: white; border-color: #00aff4; animation: pop 0.3s ease; }
+        .toast-coment { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #ff4b2b; color: white; padding: 10px 20px; border-radius: 20px; font-weight: bold; opacity: 0; transition: 0.4s; z-index: 10001; }
+        .toast-coment.show { opacity: 1; bottom: 40px; }
+        @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body>
 
-<header>
-    <div>
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect>
-            <polyline points="8 6 16 12 8 18"></polyline>
-        </svg>
+    <div id="toast-feedback" class="toast-coment">Obrigado por reagir!</div>
+
+    <div id="media-lightbox" class="lightbox">
+        <div class="lightbox-controls">
+            <button onclick="compartilharMidia()"><i class="fas fa-share-alt"></i></button>
+            <button onclick="fecharMidia()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="lightbox-content" id="lightbox-content"></div>
     </div>
-    <div>
-        <h1>MCPE 1.18.32.02 Architect</h1>
-        <p>Especialista em Comandos Bedrock</p>
+
+    <div class="overlay" id="overlay"></div>
+
+    <div class="menu-topo">
+        <div class="tres-barrinhas" id="abrir-menu"><i class="fas fa-bars"></i></div>
+        <div class="nome-site">CriativeGames</div>
     </div>
-    <button class="settings-btn" onclick="clearMemory()" title="Limpar Memória">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-        </svg>
-    </button>
-</header>
 
-<div id="chat-container">
-    <div class="message ai-message">
-        Olá! Sou sua especialista profissional em comandos para <strong>Minecraft Bedrock 1.18.32.02</strong>. <br><br>
-        Posso criar sistemas complexos, explicar a lógica de Command Blocks e organizar tudo perfeitamente para você. Qual sistema vamos criar hoje?
+    <div class="menu-lateral" id="menu-lateral">
+        <div class="header-menu-lateral">
+            <div class="fechar" id="fechar-menu"><i class="fas fa-times"></i></div>
+            <div class="titulo-menu">Menu</div>
+        </div>
+        <ul>
+            <li><a href="#" onclick="mostrarSecao('inicio', true)"><i class="fas fa-home"></i> Início</a></li>
+            <li><a href="#" onclick="mostrarSecao('atualizacoes', true)"><i class="fas fa-calendar-alt"></i> Atualizações</a></li>
+            <li><a href="#" onclick="mostrarSecao('proximas', true)"><i class="fas fa-arrow-up"></i> Próximas</a></li>
+        </ul>
     </div>
-</div>
 
-<div class="input-area">
-    <textarea id="user-input" placeholder="Descreva o comando ou sistema que você deseja..." onkeydown="checkEnter(event)"></textarea>
-    <button id="send-btn" onclick="sendMessage()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-        </svg>
-    </button>
-</div>
-
-<script>
-    // ==========================================
-    // CONFIGURAÇÃO DA API
-    // ==========================================
+    <div id="inicio" class="secao ativa"></div>
+    <div id="atualizacoes" class="secao"></div>
+    <div id="proximas" class="secao"></div>
     
-    // COLOQUE SUA API AQUI ABAIXO
-    var API = "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";
-
-    // ==========================================
-    // PROMPTS DO SISTEMA
-    // ==========================================
-
-    const PROMPT_PROFESSIONAL = `
-    Você é uma Engenheira de Comandos Sênior especializada EXCLUSIVAMENTE em Minecraft Bedrock Edition, versão 1.18.32.02.
-    
-    SUA PERSONALIDADE:
-    - Profissional, técnica, direta e extremamente organizada.
-    - Você não usa emojis. Você usa formatação limpa.
-    - Você nunca erra a sintaxe da versão 1.18.32.
-    
-    SEUS DEVERES:
-    1. Criar comandos livres de erros de sintaxe para a API Bedrock.
-    2. Explicar EXATAMENTE onde cada comando vai:
-       - Se é no Chat.
-       - Se é no Command Block (Impulso, Cadeia, Repetição).
-       - Condições (Incondicional/Condicional).
-       - Redstone (Precisa de Redstone/Sempre Ativo).
-    3. Se houver múltiplos comandos, explique a posição física (ex: "Coloque um bloco de repetição apontando para cima, e em cima dele um bloco em cadeia...").
-    4. Explique a lógica de forma educacional.
-    5. Use Markdown para blocos de código.
-    `;
-
-    const PROMPT_LEARNING = `
-    INSTRUÇÕES DE ADAPTABILIDADE:
-    - Se o usuário fornecer um método ou sintaxe específica que ele prefere, adote esse estilo imediatamente para as próximas respostas.
-    - Integre o conhecimento que o usuário passar com sua base de dados profissional.
-    - Se o usuário corrigir um comando, peça desculpas profissionalmente e gere a versão corrigida e otimizada.
-    `;
-
-    // ==========================================
-    // LÓGICA DO SISTEMA
-    // ==========================================
-
-    let messageHistory = [];
-    const chatContainer = document.getElementById('chat-container');
-    const userInput = document.getElementById('user-input');
-
-    window.onload = function() {
-        loadChat();
-    };
-
-    function checkEnter(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    }
-
-    async function sendMessage() {
-        const text = userInput.value.trim();
-        if (!text) return;
-
-        if (API === "API_aqui" || API === "") {
-            alert("ERRO: Você precisa abrir o arquivo .html e colocar sua chave API do Groq na variável API.");
-            return;
-        }
-
-        addMessageToUI(text, 'user');
-        userInput.value = '';
-
-        const typingId = addTypingIndicator();
-
-        let apiMessages = [];
-        apiMessages.push({ role: "system", content: PROMPT_PROFESSIONAL + "\n" + PROMPT_LEARNING });
-
-        messageHistory.forEach(msg => {
-            apiMessages.push(msg);
-        });
-
-        const newMessageObj = { role: "user", content: text };
-        apiMessages.push(newMessageObj);
+    <script>
+        // ==========================================
+        // SISTEMA DE MENSAGENS / POSTS (MEXA AQUI)
+        // ==========================================
         
-        messageHistory.push(newMessageObj);
-        saveChat();
+        const MEUS_POSTS = [
+        
+            {
+                secao: "inicio",
+                id: "boas_vindas_v2",
+                texto: `
+# 🎮 Bem-vindo a CriativeGames!
 
-        try {
-            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${API}`
-                },
-                body: JSON.stringify({
-                    messages: apiMessages,
-                    model: "llama-3.3-70b-versatile", // Modelo original e estável do Groq
-                    temperature: 0.5,
-                    max_tokens: 2048
-                })
-            });
+**O seu portal oficial para todas as novidades, bastidores e atualizações exclusivas do nosso universo gamer.**
 
-            const data = await response.json();
-            
-            document.getElementById(typingId).remove();
+Aqui você não apenas joga, você acompanha a **evolução** de perto. Se você busca precisão nas datas e quer ver as artes originais antes de todo mundo, você está no lugar certo!
 
-            if (data.choices && data.choices[0]) {
-                const aiResponse = data.choices[0].message.content;
-                addMessageToUI(aiResponse, 'ai');
-                
-                messageHistory.push({ role: "assistant", content: aiResponse });
-                saveChat();
-            } else {
-                addMessageToUI("Erro: Resposta inválida da API. Verifique se sua chave API está correta e se possui créditos/limite.", 'ai');
+---
+
+### 🔥 O que você encontra por aqui?
+
+* **📅 Cronograma Oficial:** Datas confirmadas de lançamentos e manutenções.
+* **📸 Galeria de Imagens:** Teasers, renders de personagens e novos mapas.
+* **🛠️ Changelogs:** Lista detalhada de tudo o que mudou em cada versão.
+* **🚀 Futuro do Jogo:** Spoiler das mecânicas que estamos desenvolvendo.
+---
+
+### 📢 Avisos Importantes
+
+**Não esqueça de conferir o menu de [Atualizações] para ver o que acabou de sair do forno!**
+
+---
+_Prepare seu equipamento e divirta-se!_`
+            },
+            {
+                secao: "atualizacoes",
+                id: "patch_notes_v1",
+                texto: `
+
+                https://i.postimg.cc/gkDd02YT/Screenshot_20260320_164851_2.jpg
+
+📊 SISTEMA DE STATUS - ATUALIZAÇÃO OFICIAL [20/03/2026]
+
+___
+
+# ⚔️ Sistema de Status
+
+Apresentamos o novo sistema de status, desenvolvido para dar mais liberdade ao jogador na evolução do seu personagem. Agora você pode moldar sua jogabilidade do seu jeito!
+
+___
+
+# 📈 Como Ganhar Pontos
+
+• Ao subir de level (UPAR), você recebe pontos de status automaticamente.  
+• Quanto maior o seu level, mais pontos você acumula ao longo do tempo.  
+• Esses pontos são essenciais para fortalecer seu personagem.
+
+___
+
+# 🧠 Como Distribuir os Pontos
+
+Você pode distribuir seus pontos em diferentes atributos, permitindo criar builds únicas:
+
+• 💪 Força → aumenta o dano no estilo de luta e energia
+
+• 🛡️ Defesa → aumenta a vida
+
+• 🔥 Poder → dá mais dano em poder
+
+Cada ponto investido impacta diretamente na sua performance!
+
+___
+
+# 🎯 Estratégia
+
+• Escolha bem onde investir seus pontos  
+• Crie combinações únicas de atributos  
+• Adapte seu estilo de jogo conforme sua evolução  
+
+Não existe apenas um caminho — você decide como será seu personagem!
+
+___
+
+# 🔥 Conclusão
+
+Domine o sistema de status e leve seu personagem ao máximo potencial.  
+A evolução está nas suas mãos!
+
+___   `
+            },
+            {
+                secao: "proximas",
+                id: "lista_futuro",
+                texto: `                                                   
+# nada para ver aqui.            
+                `
             }
+        ];
 
-        } catch (error) {
-            if(document.getElementById(typingId)) document.getElementById(typingId).remove();
-            addMessageToUI("Erro de conexão: Verifique sua internet ou a validade da API Key. Detalhes: " + error.message, 'ai');
-        }
-    }
+        // ==========================================
+        // FIM DO SISTEMA DE MENSAGENS
+        // ==========================================
 
-    function addMessageToUI(content, sender) {
-        const div = document.createElement('div');
-        div.classList.add('message');
-        div.classList.add(sender === 'user' ? 'user-message' : 'ai-message');
+        const _supabaseUrl = 'https://qrfkpqjddqbcdiodluxw.supabase.co';
+        const _supabaseKey = 'sb_publishable_RqMFch3gFFtDsHuvKsXHUA_eZdlT5k8';
+        const _supabase = window.supabase.createClient(_supabaseUrl, _supabaseKey);
 
-        if (sender === 'ai') {
-            div.innerHTML = marked.parse(content);
-            processCodeBlocks(div);
-        } else {
-            div.textContent = content;
-        }
+        let _meuId = localStorage.getItem('user_uid') || 'u' + Math.random().toString(36).substr(2,9);
+        localStorage.setItem('user_uid', _meuId);
 
-        chatContainer.appendChild(div);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
+        let mediaCounter = 0;
 
-    function processCodeBlocks(element) {
-        const pres = element.querySelectorAll('pre');
-        pres.forEach(pre => {
-            const codeContent = pre.innerText; 
-            
-            const wrapper = document.createElement('div');
-            wrapper.className = 'code-container';
-            
-            const header = document.createElement('div');
-            header.className = 'code-header';
-            header.innerHTML = `<span>Minecraft 1.18.32</span>`;
-            
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'copy-btn';
-            copyBtn.innerHTML = `
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-                Copiar
-            `;
-            
-            copyBtn.onclick = () => {
-                navigator.clipboard.writeText(codeContent).then(() => {
-                    const originalHTML = copyBtn.innerHTML;
-                    copyBtn.innerHTML = `<span>Copiado!</span>`;
-                    setTimeout(() => {
-                        copyBtn.innerHTML = originalHTML;
-                    }, 2000);
-                });
-            };
-
-            header.appendChild(copyBtn);
-            wrapper.appendChild(header);
-            
-            const newPre = pre.cloneNode(true);
-            wrapper.appendChild(newPre);
-            
-            pre.parentNode.replaceChild(wrapper, pre);
-        });
-    }
-
-    function addTypingIndicator() {
-        const id = 'typing-' + Date.now();
-        const div = document.createElement('div');
-        div.id = id;
-        div.classList.add('message', 'ai-message');
-        div.style.width = "fit-content";
-        div.innerHTML = `
-            <div class="typing-indicator">
-                <div class="dot"></div>
-                <div class="dot"></div>
-                <div class="dot"></div>
-            </div>
-        `;
-        chatContainer.appendChild(div);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-        return id;
-    }
-
-    function saveChat() {
-        localStorage.setItem('mcpe_ai_history', JSON.stringify(messageHistory));
-    }
-
-    function loadChat() {
-        const saved = localStorage.getItem('mcpe_ai_history');
-        if (saved) {
-            messageHistory = JSON.parse(saved);
-            messageHistory.forEach(msg => {
-                if(msg.role !== 'system') {
-                    addMessageToUI(msg.content, msg.role === 'assistant' ? 'ai' : 'user');
+        // Função para gerar os cards automaticamente a partir da lista MEUS_POSTS
+        function gerarPostsAutomaticos() {
+            MEUS_POSTS.forEach(post => {
+                const container = document.getElementById(post.secao);
+                if (container) {
+                    const card = document.createElement('div');
+                    card.className = 'post-card';
+                    card.setAttribute('data-markdown', '');
+                    card.setAttribute('data-post-id', post.id);
+                    card.innerHTML = post.texto;
+                    container.appendChild(card);
                 }
             });
         }
-    }
 
-    function clearMemory() {
-        if(confirm("Deseja apagar todo o histórico de conversa?")) {
-            localStorage.removeItem('mcpe_ai_history');
-            messageHistory = [];
-            chatContainer.innerHTML = `
-                <div class="message ai-message">
-                    Memória apagada. Vamos começar um novo projeto do zero!
-                </div>
+        async function obterDadosLink(url) {
+            try {
+                const response = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
+                const data = await response.json();
+                return data.data;
+            } catch (e) { return null; }
+        }
+
+        function criarEmbeds(texto) {
+            const urlRegex = /(https?:\/\/[^\s<]+)/g;
+            return texto.replace(urlRegex, function(url) {
+                let cleanUrl = url.replace(/[.,;!?]$/, '');
+                let lowerUrl = cleanUrl.toLowerCase();
+                
+                if (lowerUrl.match(/\.(jpeg|jpg|gif|png|webp|bmp)(\?.*)?$/)) {
+                    mediaCounter++;
+                    let mid = 'media-' + mediaCounter;
+                    return `<img src="${cleanUrl}" id="${mid}" class="embedded-media" onclick="abrirMidia('img', '${cleanUrl}', '${mid}')">`;
+                } 
+                if (lowerUrl.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/)) {
+                    mediaCounter++;
+                    let mid = 'media-' + mediaCounter;
+                    return `<div class="video-container" id="${mid}"><video onclick="abrirMidia('video', '${cleanUrl}', '${mid}')"><source src="${cleanUrl}"></video><div class="play-overlay"><i class="fas fa-play-circle"></i></div></div>`;
+                }
+
+                if (lowerUrl.includes("youtube.com") || lowerUrl.includes("youtu.be")) {
+                    let videoId = lowerUrl.includes("v=") ? cleanUrl.split('v=')[1].split('&')[0] : cleanUrl.split('/').pop();
+                    return `<div class="embed-container">
+                        <div class="embed-provider">YouTube</div>
+                        <a href="${cleanUrl}" class="embed-title" target="_blank">Assista no YouTube</a>
+                        <img src="https://img.youtube.com/vi/${videoId}/mqdefault.jpg" class="embed-thumbnail" onclick="window.open('${cleanUrl}')">
+                    </div>`;
+                }
+
+                let tempId = "link-" + Math.random().toString(36).substr(2, 9);
+                carregarMetadados(cleanUrl, tempId);
+                return `<div id="${tempId}" class="embed-container"><div class="embed-provider">Carregando link...</div><a href="${cleanUrl}" target="_blank" class="embed-title">${cleanUrl}</a></div>`;
+            });
+        }
+
+        async function carregarMetadados(url, elementId) {
+            const info = await obterDadosLink(url);
+            const container = document.getElementById(elementId);
+            if (!container || !info) return;
+            container.innerHTML = `
+                <div class="embed-provider">${info.publisher || 'Link Externo'}</div>
+                <a href="${url}" class="embed-title" target="_blank">${info.title || url}</a>
+                ${info.description ? `<div class="embed-description">${info.description}</div>` : ''}
+                ${info.image ? `<img src="${info.image.url}" class="embed-thumbnail" onclick="window.open('${url}')">` : ''}
             `;
         }
-    }
-</script>
 
+        function validarApenasUmEmoji(str) {
+            const emojiRegex = /^(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])$/u;
+            return emojiRegex.test(str);
+        }
+
+        async function renderizarReacoes() {
+            const posts = document.querySelectorAll('.post-card');
+            for (let p of posts) {
+                const postId = p.getAttribute('data-post-id');
+                if(!postId) continue;
+                let bar = p.querySelector('.area-reacoes');
+                if(!bar) {
+                    bar = document.createElement('div');
+                    bar.className = 'area-reacoes';
+                    p.appendChild(bar);
+                }
+                const { data } = await _supabase.from('reacoes_site').select('tipo_reacao, usuario_id').eq('post_id', postId);
+                const contagem = {}; const euReagi = {};
+                data?.forEach(r => {
+                    contagem[r.tipo_reacao] = (contagem[r.tipo_reacao] || 0) + 1;
+                    if(r.usuario_id === _meuId) euReagi[r.tipo_reacao] = true;
+                });
+                let html = `
+                    <button class="btn-acao ${euReagi['like'] ? 'ativo-azul' : ''}" onclick="cliqueReacao('${postId}', 'like')"><i class="fas fa-thumbs-up"></i> <span>${contagem['like'] || 0}</span></button>
+                    <button class="btn-acao ${euReagi['dislike'] ? 'ativo' : ''}" onclick="cliqueReacao('${postId}', 'dislike')"><i class="fas fa-thumbs-down"></i> <span>${contagem['dislike'] || 0}</span></button>
+                `;
+                Object.keys(contagem).forEach(tipo => {
+                    if(tipo !== 'like' && tipo !== 'dislike') {
+                        html += `<button class="btn-acao ${euReagi[tipo] ? 'ativo' : ''}" onclick="cliqueReacao('${postId}', '${tipo}')">${tipo} <span>${contagem[tipo]}</span></button>`;
+                    }
+                });
+                html += `<button class="btn-acao" onclick="addCustom('${postId}')"><i class="fas fa-plus"></i></button>`;
+                bar.innerHTML = html;
+            }
+        }
+
+        async function cliqueReacao(postId, tipo) {
+            const { data: todasMinhas } = await _supabase.from('reacoes_site').select('id, tipo_reacao').eq('post_id', postId).eq('usuario_id', _meuId);
+            let jaTinhaEssa = false;
+            for(let r of todasMinhas) {
+                if(r.tipo_reacao === tipo) jaTinhaEssa = true;
+                await _supabase.from('reacoes_site').delete().eq('id', r.id);
+            }
+            if(!jaTinhaEssa) {
+                await _supabase.from('reacoes_site').insert({ post_id: postId, usuario_id: _meuId, tipo_reacao: tipo });
+                showToast();
+            }
+            renderizarReacoes();
+        }
+
+        function addCustom(postId) {
+            let emoji = prompt("Digite APENAS UM emoji:");
+            if(emoji && validarApenasUmEmoji(emoji.trim())) cliqueReacao(postId, emoji.trim());
+            else if(emoji) alert("Apenas 1 emoji permitido!");
+        }
+
+        function showToast() {
+            const t = document.getElementById('toast-feedback');
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2500);
+        }
+
+        function renderizarConteudo() {
+            document.querySelectorAll('[data-markdown]').forEach(el => {
+                let html = criarEmbeds(el.innerHTML.trim());
+                el.innerHTML = marked.parse(html);
+            });
+            renderizarReacoes();
+        }
+
+        // --- ATUALIZADO: ABRIR MÍDIA E CRIAR ID NA URL ---
+        function abrirMidia(tipo, url, id) {
+            const content = document.getElementById('lightbox-content');
+            content.innerHTML = tipo === 'img' ? `<img src="${url}" style="max-width:90vw; max-height:90vh;">` : `<video src="${url}" controls autoplay style="max-width:90vw; max-height:90vh;"></video>`;
+            document.getElementById('media-lightbox').classList.add('ativa');
+            
+            // Cria o ID na URL para permitir abrir direto depois
+            const novaUrl = window.location.pathname + '?media=' + id;
+            history.pushState({media: id}, '', novaUrl);
+        }
+
+        // --- ATUALIZADO: FECHAR MÍDIA E LIMPAR URL ---
+        function fecharMidia() {
+            document.getElementById('media-lightbox').classList.remove('ativa');
+            document.getElementById('lightbox-content').innerHTML = '';
+            
+            // Remove o ID da URL ao fechar
+            history.pushState(null, '', window.location.pathname);
+        }
+
+        // --- ATUALIZADO: COMPARTILHAR DE VERDADE COM BANNER/URL NATIVA ---
+        async function compartilharMidia() {
+            const linkAtual = window.location.href; // Já captura o ID caso esteja com a mídia aberta
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'CriativeGames',
+                        text: 'Confira esta atualização incrível no CriativeGames!',
+                        url: linkAtual
+                    });
+                } catch (err) {
+                    console.log('Compartilhamento cancelado ou falhou', err);
+                }
+            } else {
+                // Fallback se o navegador/PC for muito antigo
+                navigator.clipboard.writeText(linkAtual);
+                alert("Link copiado para a área de transferência!");
+            }
+        }
+
+        const menuLateral = document.getElementById("menu-lateral");
+        const overlay = document.getElementById("overlay");
+        function toggleMenu() { menuLateral.classList.toggle("ativa"); overlay.classList.toggle("ativa"); }
+        document.getElementById("abrir-menu").onclick = toggleMenu;
+        document.getElementById("fechar-menu").onclick = toggleMenu;
+        overlay.onclick = toggleMenu;
+
+        // --- ATUALIZADO: MOSTRAR SEÇÃO E ALTERAR URL PARA /home, /updates, etc ---
+        function mostrarSecao(id, updateHistory = false) {
+            document.querySelectorAll('.secao').forEach(s => s.classList.remove('ativa'));
+            document.getElementById(id).classList.add('ativa');
+            if(menuLateral.classList.contains('ativa')) toggleMenu();
+
+            if (updateHistory) {
+                let novaRota = '/CriativeGame/home';
+                if (id === 'atualizacoes') novaRota = '/CriativeGame/updates';
+                if (id === 'proximas') novaRota = '/CriativeGame/upcoming-updates';
+                
+                // Atualiza a URL sem recarregar a página
+                history.pushState(null, '', novaRota);
+            }
+        }
+
+        // --- ATUALIZADO: SISTEMA DE NOTIFICAÇÃO REAL E VERIFICAÇÃO DE ROTA/MÍDIA ---
+        function checarNotificacoes() {
+            if ("Notification" in window) {
+                Notification.requestPermission();
+                
+                let postsSalvos = localStorage.getItem('total_posts_criativegames');
+                let postsAtuais = MEUS_POSTS.length;
+
+                // Se houver mais posts do que o salvo anteriormente, envia a notificação real
+                if (postsSalvos && postsAtuais > parseInt(postsSalvos)) {
+                    if (Notification.permission === "granted") {
+                        new Notification("Nova Atualização em CriativeGames! 🎮", {
+                            body: "Acabamos de postar uma novidade. Venha conferir as atualizações!",
+                            icon: "https://cdn-icons-png.flaticon.com/512/13/13374.png"
+                        });
+                    }
+                }
+                // Salva a quantidade nova
+                localStorage.setItem('total_posts_criativegames', postsAtuais);
+            }
+        }
+
+        function gerenciarCarregamentoInicial() {
+            const urlPath = window.location.pathname;
+            const urlParams = new URLSearchParams(window.location.search);
+            const mediaId = urlParams.get('media');
+
+            // Verifica qual URL o usuário acessou para abrir a aba certa
+            if (urlPath.includes('/updates')) {
+                mostrarSecao('atualizacoes', false);
+            } else if (urlPath.includes('/upcoming-updates')) {
+                mostrarSecao('proximas', false);
+            } else {
+                mostrarSecao('inicio', false); // Fallback e /home
+            }
+
+            // Se tiver o ID de imagem/vídeo, força o click para abrir em tela cheia logo de cara
+            if (mediaId) {
+                setTimeout(() => {
+                    const el = document.getElementById(mediaId);
+                    if (el) {
+                        if (el.tagName === 'IMG') { el.click(); }
+                        else if (el.classList.contains('video-container')) { el.querySelector('video').click(); }
+                    }
+                }, 800); // Aguarda a página e as imagens renderizarem
+            }
+        }
+
+        // Listeners de voltar/avançar no navegador para consertar a URL e abas
+        window.addEventListener('popstate', gerenciarCarregamentoInicial);
+
+        // INICIALIZAÇÃO
+        window.onload = () => {
+            gerarPostsAutomaticos(); 
+            renderizarConteudo();    
+            checarNotificacoes(); // Inicia as Notificações Reais do Google
+            gerenciarCarregamentoInicial(); // Verifica Rotas e IDs de Mídia
+        };
+    </script>
 </body>
 </html>
